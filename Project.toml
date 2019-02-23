@@ -1,0 +1,11 @@
+name = "SAMtools"
+uuid = "ce1b76f3-601c-5192-adf8-a07e935792b9"
+authors = ["Argel Ramírez Reyes <argel.ramirez@gmail.com>"]
+
+[deps]
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
