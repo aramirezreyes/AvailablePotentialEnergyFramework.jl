@@ -1,5 +1,3 @@
-
-
 mutable struct surf_quantities
     surf_pres
     surf_speed
@@ -208,23 +206,23 @@ function filter_array_2!(array::Array{T,3},smooth_x,smooth_time,position) where 
         #return array
 end  
 
-function filter_array(array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
+function filter_array!(buf::Array{T,4},array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
     if position == 2
-        filtered = imfilter(imfilter(array, kernel4d(smooth_x,smooth_time),"circular"),kernel4d_t(smooth_time),"inner")
+       error("Filter_array: Inner array is not implemented yer")
     else
-        filtered = imfilter(imfilter(array, kernel4d(smooth_x,smooth_time),"circular"),kernel4d_t(smooth_time),"replicate")
+        imfilter!(buf,array, kernel4d(smooth_x,smooth_time),"circular")
+        imfilter!(array,buf,kernel4d_t(smooth_time),"symmetric")
     end
-        return filtered
+#        return filtered
 end    
 
-function filter_array(array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
+function filter_array!(buf::Array{T,3},array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
     if position==2
-        filtered = imfilter(imfilter(array, kernel3d(smooth_x,smooth_time),"circular"),kernel3d_t(smooth_time),"inner")
+       error("Filter_array: Inner array is not implemented yer")
     else
-        
-        filtered = imfilter(imfilter(array, kernel3d(smooth_x,smooth_time),"circular"),kernel3d_t(smooth_time),"replicate")
+        imfilter!(buf,array, kernel3d(smooth_x,smooth_time),"circular")
+        imfilter!(array,buf,kernel3d_t(smooth_time),"replicate")
     end
-        return filtered
 end
 
                                
@@ -259,22 +257,17 @@ function filter_array_time(array::Array{T,1},window,position) where T <: Real
     end
     return smooth_t
 end
-function getsmoothdata(U,V, W, Tv, ThetaV, RAD, Fs, smooth_x,smooth_y,smooth_time,position)
-    U = filter_array(U,smooth_x,smooth_time,position)
-    GC.gc()                                                            
-    V = filter_array(V,smooth_x,smooth_time,position)
-    GC.gc()                                                           
-    W = filter_array(W,smooth_x,smooth_time,position)
-    GC.gc()                                                             
-    Tv = filter_array(Tv,smooth_x,smooth_time,position)
-    GC.gc()                                                           
-    ThetaV = filter_array(ThetaV,smooth_x,smooth_time,position)
-    GC.gc()                                                           
-    RAD = filter_array(RAD,smooth_x,smooth_time,position)
-    GC.gc()                                                           
-    Fs = filter_array(Fs,smooth_x,smooth_time,position)
-    GC.gc()                                                         
-    return U, V, W, Tv, ThetaV, RAD, Fs
+function getsmoothdata!(U,V, W, Tv, ThetaV, RAD, Fs, smooth_x,smooth_y,smooth_time,position)
+    buf3d = similar(U)
+    buf2d = similar(Fs)
+    filter_array!(buf3d,U,smooth_x,smooth_time,position)
+    filter_array!(buf3d,V,smooth_x,smooth_time,position)
+    filter_array!(buf3d,W,smooth_x,smooth_time,position)
+    filter_array!(buf3d,Tv,smooth_x,smooth_time,position)
+    filter_array!(buf3d,ThetaV,smooth_x,smooth_time,position)
+    filter_array!(buf3d,RAD,smooth_x,smooth_time,position)
+    filter_array!(buf2d,Fs,smooth_x,smooth_time,position)
+    #return U, V, W, Tv, ThetaV, RAD, Fs
 end
 
 function getsmoothdata_nospace(U::Array{T,4},V::Array{T,4}, W::Array{T,4}, Tv::Array{T,4}, ThetaV::Array{T,4}, RAD::Array{T,4}, Fs::Array{T,3}, smooth_x::Int,smooth_y::Int,smooth_time::Int,position::Int) where T <: Real
