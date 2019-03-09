@@ -1,3 +1,4 @@
+import Images: findlocalmaxima
 function smoothfilter(surf_pres_anomaly,treshold=9)
     surf_pres_median = mapwindow(median!,surf_pres_anomaly,[3,3]);
     surf_pres_median = surf_pres_median.*(surf_pres_median.>treshold);
