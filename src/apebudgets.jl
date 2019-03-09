@@ -192,7 +192,8 @@ dt = outputInterval
     ky      = length(y) # # of horizonal grid points
     std_pw  = std(pw, dims=(1,2))   #Standard deviation of precipitable water
     RAD     = RAD/day # K/s #Heating rate per second
-    Tv     = (1 .+ epsilon*qv*1e-3).*T #Virtual temperature
+    Tv = similar(T)
+    Tv     .= (1 .+ epsilon*qv*1e-3).*T #Virtual temperature
     P0      = P0*1e2
     Pref    = (1000*1e2) #Pa
     Ts      = sst #Sea surface temperature
@@ -205,10 +206,10 @@ dt = outputInterval
     ThetaV = similar(Tv);
         c1 = (R/heat_capacity)
     ThetaV  .= Tv.*(P_total./reshape(P0,(1,1,kz,1))).^c1 #Virtual potential temp
-    GC.gc()
+    
 
     println(" $exp_name Smoothing data (this is the longest part)... ")
-    U, V, W, Tv, ThetaV, RAD, Fs = getsmoothdata(U,V,W, Tv, ThetaV, RAD, Fs, smooth_x,smooth_y,smooth_time,1)
+    getsmoothdata!(U,V,W, Tv, ThetaV, RAD, Fs, smooth_x,smooth_y,smooth_time,1)
 
 
     #std_pw      = (mean!,std_pw, smooth_time) #This just smooths out the data using moving mean
