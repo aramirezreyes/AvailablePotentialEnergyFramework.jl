@@ -13,10 +13,10 @@ include("apebudgets.jl")
 
 export
 # Filters
-    filter_array,
+    filter_array!,
     filter_array_2!,
     filter_array_time,
-    getsmoothdata,
+    getsmoothdata!,
     getsmoothdata_nospace,
     #Data structures
     ape_budget,

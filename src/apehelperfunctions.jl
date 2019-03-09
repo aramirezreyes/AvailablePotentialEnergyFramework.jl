@@ -221,7 +221,7 @@ function filter_array!(buf::Array{T,3},array::Array{T,3},smooth_x,smooth_time,po
        error("Filter_array: Inner array is not implemented yer")
     else
         imfilter!(buf,array, kernel3d(smooth_x,smooth_time),"circular")
-        imfilter!(array,buf,kernel3d_t(smooth_time),"replicate")
+        imfilter!(array,buf,kernel3d_t(smooth_time),"symmetric")
     end
 end
 
