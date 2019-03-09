@@ -177,7 +177,7 @@ function filter_array_2!(array::Array{T,4},smooth_x,smooth_time,position) where 
         for z in 1:size(array,3)
             for y in 1:size(array,2)
                 for x in 1:size(array,1)
-                    array[x,y,z,:] = imfilter(filtered[x,y,z,:], kernelt(smooth_time),"replicate")
+                    array[x,y,z,:] = imfilter(filtered[x,y,z,:], kernelt(smooth_time),"symmetric")
                 end
             end
         end
@@ -199,7 +199,7 @@ function filter_array_2!(array::Array{T,3},smooth_x,smooth_time,position) where 
     ### filtering in time
         for y in 1:size(array,2)
             for x in 1:size(array,1)
-                array[x,y,:] = imfilter(filtered[x,y,:], kernelt(smooth_time),"replicate")
+                array[x,y,:] = imfilter(filtered[x,y,:], kernelt(smooth_time),"symmetric")
             end
         end
     end

@@ -42,31 +42,24 @@ using SAMtools, ImageFiltering, Test
             
         end
         
-       #  @testset "Both filters simultaneously" begin
-#             arr3d = ones(20,20,20)
-#             arr4d = ones(20,20,20,20)
-#             filt1 = filter_array(arr3d,5,5,1)
-#             filter_array_2!(arr3d,5,5,1)
-#             filt2 = filter_array(arr4d,5,5,1)
-#             filter_array_2!(arr4d,5,5,1)
-#             filt3 = filter_array(arr3d,5,5,1)
-#             filt4 = filter_array(arr4d,5,5,1)
-#             filter_array_2!(arr3d,5,5,1)
-#             filter_array_2!(arr4d,5,5,1)
-#             @test filt1 == arr3d
-#             @test filt2 == arr4d
-#             @test filt3 == arr3d
-#             @test filt4 == arr4d
-#             arr3d = rand(20,20,20)
-#             arr3d2 = copy(arr3d)
-#             arr4d = rand(20,20,20,20)
-#             arr4d2 = copy(arr4d)
-#             filter_array_2!(arr3d,5,5,1)
-#             filter_array_2!(arr4d,5,5,1)
-#             @test arr3d != arr3d2
-#             @test arr4d != arr4d2
+         @testset "Both filters simultaneously" begin
+            arr3d = rand(20,20,20)
+            arr3d2 = copy(arr3d)
+            arr3d3 = copy(arr3d)
+            arr4d = rand(20,20,20,20)
+            arr4d2 = copy(arr4d)
+            arr4d3 = copy(arr4d)
+            buf3d   = similar(arr3d)
+            buf4d   = similar(arr4d)
+
+            filter_array_2!(arr3d2,5,5,1)
+            filter_array_2!(arr4d2,5,5,1)
+            filter_array!(buf3d,arr3d3,5,5,1)
+            filter_array!(buf4d,arr4d3,5,5,1)
+            @test arr3d3 == arr3d2
+            @test arr4d3 == arr4d2
             
-#         end
+        end
     end
     
 
