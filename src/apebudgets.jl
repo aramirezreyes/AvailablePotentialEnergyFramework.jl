@@ -184,7 +184,7 @@ dt = outputInterval
         smooth_x    = 11
         smooth_y    = 11
     end
-    smooth_time = floor(Int,dayLength*5)   
+    smooth_time = floor(Int,dayLength*1)   
     dx    = x[2]-x[1] #Grid size()
     dy    = dx #Grid size()
     kz      = length(z) # vertical levels
