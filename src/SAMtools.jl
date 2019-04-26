@@ -28,6 +28,7 @@ export
     Composite_Cyclone_v2,
     Composite_Cyclone_v3,
     #Methods
+    findlocalmaxima,
     cyclonecompositer,
     shifter,
     smoothfilter,

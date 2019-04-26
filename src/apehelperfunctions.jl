@@ -253,7 +253,7 @@ function filter_array_time(array::Array{T,1},window,position) where T <: Real
     if position==2
         smooth_t = imfilter(array,kern,"inner")
     else
-        smooth_t = imfilter(array,kern)
+        smooth_t = imfilter(array,kern,"symmetric")
     end
     return smooth_t
 end
