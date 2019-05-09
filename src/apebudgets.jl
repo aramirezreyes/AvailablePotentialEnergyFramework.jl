@@ -169,65 +169,65 @@ function buoyancy_4d(exp_name,outputInterval,U,V,W,RAD,T,qv,PP,pw,SHF,LHF,x,y,z,
 day   = (86400)
 sst   = (300)
 dt = outputInterval
-    dayLength = (60*60*24/outputInterval); #How many data points make one day
-    R       = (287); # Ideal gas constants
-    heat_capacity      = (1004); #Heat capacity of air
-    L       = (2.5*1e6); #Enthalpy of phase change
-    epsilon     = (29/18-1); 
-    g       = (10); #acceleration of gravity
-    #println("Daylength: $dayLength")
-    #Smothing is equivalent in time to picking the slow component
-    if outputInterval == 14400     
-        smooth_x    = 5 
-        smooth_y    = 5
-    elseif outputInterval == 7200
-        smooth_x    = 11
-        smooth_y    = 11
-    end
-    smooth_time = floor(Int,dayLength*1)   
-    dx    = x[2]-x[1] #Grid size()
-    dy    = dx #Grid size()
-    kz      = length(z) # vertical levels
-    kx      = length(x) # # of horizonal grid points
-    ky      = length(y) # # of horizonal grid points
-    std_pw  = std(pw, dims=(1,2))   #Standard deviation of precipitable water
-    RAD     = RAD/day # K/s #Heating rate per second
-    Tv = similar(T)
-    Tv     .= (1 .+ epsilon*qv*1e-3).*T #Virtual temperature
-    P0      = P0*1e2
-    Pref    = (1000*1e2) #Pa
-    Ts      = sst #Sea surface temperature
-    qs      = (25.7*1e-3) 
-    Tvs     = Ts*(1+epsilon*qs)
-    Fs_SHF = g/(1*heat_capacity*Ts)*(SHF) # rho := 1
-    Fs_LHF = g/(1*heat_capacity*Ts)*(epsilon*heat_capacity*Ts/L*LHF) # rho := 1
-    Fs      = Fs_SHF + Fs_LHF
-    P_total = PP .+ reshape(P0,(1,1,kz,1))
-    ThetaV = similar(Tv);
-        c1 = (R/heat_capacity)
-    ThetaV  .= Tv.*(P_total./reshape(P0,(1,1,kz,1))).^c1 #Virtual potential temp
-    
+#########################Empty array creation #############
+Tv = similar(T)
+ThetaV = similar(T)
 
-    println(" $exp_name Smoothing data (this is the longest part)... ")
-    getsmoothdata!(U,V,W, Tv, ThetaV, RAD, Fs, smooth_x,smooth_y,smooth_time,1)
+dayLength = (60*60*24/outputInterval); #How many data points make one day
+R       = (287); # Ideal gas constants
+heat_capacity      = (1004); #Heat capacity of air
+L       = (2.5*1e6); #Enthalpy of phase change
+epsilon     = (29/18-1); 
+g       = (10); #acceleration of gravity
+#println("Daylength: $dayLength")
+#Smothing is equivalent in time to picking the slow component
+if outputInterval == 14400     
+    smooth_x    = 5 
+    smooth_y    = 5
+elseif outputInterval == 7200
+    smooth_x    = 11
+    smooth_y    = 11
+end
+smooth_time = floor(Int,dayLength*5)   
+dx    = x[2]-x[1] #Grid size()
+dy    = dx #Grid size()
+kz      = length(z) # vertical levels
+kx      = length(x) # # of horizonal grid points
+ky      = length(y) # # of horizonal grid points
+RAD     .= RAD/day # K/s #Heating rate per second
+Tv     .= (1 .+ epsilon*qv*1e-3).*T #Virtual temperature
+P0      = P0*1e2
+Pref    = (1000*1e2) #Pa
+Ts      = sst #Sea surface temperature
+qs      = (25.7*1e-3) 
+Tvs     = Ts*(1+epsilon*qs)
+@. SHF = g/(1*heat_capacity*Ts)*(SHF) # rho := 1
+@. LHF = g/(1*heat_capacity*Ts)*(epsilon*heat_capacity*Ts/L*LHF) # rho := 1
+@. SHF  = SHF + LHF
+@. PP = PP .+ reshape(P0,(1,1,kz,1))
+
+    c1 = (R/heat_capacity)
+ThetaV  .= Tv.*(PP./reshape(P0,(1,1,kz,1))).^c1 #Virtual potential temp
 
 
-    #std_pw      = (mean!,std_pw, smooth_time) #This just smooths out the data using moving mean
+println(" $exp_name Smoothing data (this is the longest part)... ")
+getsmoothdata!(U,V,W, Tv, ThetaV, RAD, Fs, smooth_x,smooth_y,smooth_time,1)
 
-std_pw =  dropdims(std_pw,dims=(1,2))
-#std_pw=[mean(std_pw[max(1,i-floor(Int,smooth_time/2)):min(i+floor(Int,smooth_time/2),                end)]) for i=1:length(std_pw)]
-std_pw = filter_array_time(std_pw,smooth_time,1)
-#xBar means horizontal mean value
 
-xBar_ThetaV = mean(ThetaV,dims=(1,2)) 
+
+
 xBar_T      = mean(T,dims=(1,2)) # use first 20-day mean as the reference
 xBar_Tv     = mean(Tv,dims=(1,2)) # use first 20-day mean as the reference
-xBar_Pt     = mean(P_total,dims=(1,2)) # use first 20-day mean as the reference
+var_Tv = Tv .- mean(Tv,dims=(1,2))
+
+var_ThetaV = ThetaV .- mean(ThetaV,dims=(1,2))
+xBar_ThetaV = mean(ThetaV,dims=(1,2)) 
+xBar_Pt     = mean(Pt,dims=(1,2)) # use first 20-day mean as the reference
 #var_ThetaV = zeros(size(ThetaV))
 #var_Tv = zeros(size(ThetaV))
 
-var_ThetaV = ThetaV .- mean(ThetaV,dims=(1,2))
-var_Tv = Tv .- mean(Tv,dims=(1,2))
+
+
 
 rho0    = dropdims(xBar_Pt/R./xBar_Tv,dims=(1,2))
 
@@ -249,7 +249,7 @@ for i=1:length(bb)
 end
 
 B       = g*var_ThetaV./xBar_ThetaV
-RAD_b   = RAD.*(g./xBar_Tv) # convert unit to buoyancy
+RAD   .= RAD.*(g./xBar_Tv) # convert unit to buoyancy
 
 PP         = []
 P_total    = []
@@ -265,7 +265,7 @@ GC.gc()
 println(" $exp_name : Computing buoyancy budget... ")
 # Buoyancy budget
 dz          = 50
-dBdt, UdBdx,VdBd, WN2, Qs, Diabatic_other = buoyancybudget(B, RAD_b, Fs, U,V ,W, N2, dx,dy, dz, dt, x,y, z, 1:size(B,4))
+dBdt, UdBdx,VdBd, WN2, Qs, Diabatic_other = buoyancybudget(B, RAD, SHF, U,V ,W, N2, dx,dy, dz, dt, x,y, z, 1:size(B,4))
 GC.gc()
 dia_a = Diabatic_other .- mean(Diabatic_other,dims=(1,2))
 rad_a = RAD_b .- mean(RAD_b,dims=(1,2))

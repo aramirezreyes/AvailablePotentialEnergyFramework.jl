@@ -35,6 +35,7 @@ export
     cyclonecompositer_v2,
     cyclonecompositer_v3,
     cyclonecompositer_v3_partial_60d,
+    cyclonecompositer_v4_partial,
     timemean_nofalseframe,
     removefalseframes,
     getapebudget,

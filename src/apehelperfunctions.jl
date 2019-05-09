@@ -160,10 +160,18 @@ function kernel3d_t(window_t)
     kernel_t = ones(window_t)/(window_t)
     return  kernelfactors((centered([1.0]), centered([1.0]), centered(kernel_t)))
 end
+"""
+    filter_array_2!(array,smooth_x,smooth_t,position)
 
+Filters the input array _in-place_ using a moving mean. 
 
+In the first two dimensions the window width is smooth_x and the border is treated as circular (for doubly periodic domains). In the space dimension the width is smooth_t and the border value is replicated.
+
+This function calls under the hood the imfilter function of Images.jl
+
+"""
 function filter_array_2!(array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
-    filtered = similar(array)
+#    filtered = similar(array)
     if position == 2
         filtered = imfilter(imfilter(array, kernel4d(smooth_x,smooth_time),"circular"),kernel4d_t(smooth_time),"inner")
     else
@@ -193,7 +201,7 @@ function filter_array_2!(array::Array{T,3},smooth_x,smooth_time,position) where 
     ###Filtering in space
 
         for t in 1:size(array,3)
-            filtered[:,:,t] = imfilter(array[:,:,t], kernel2d(smooth_x),"circular")
+            filtered[:,:,t] = imfilter(filtered,array[:,:,t], kernel2d(smooth_x),"circular")
         end
 
     ### filtering in time
@@ -205,7 +213,16 @@ function filter_array_2!(array::Array{T,3},smooth_x,smooth_time,position) where 
     end
         #return array
 end  
+"""
+    filter_array!(buffer,array,smooth_x,smooth_t,position)
 
+Filters the input array _in-place_ using a moving mean. In the first two dimensions the window width is smooth_x and the border is treated as circular (for doubly periodic domains). In the space dimension the width is smooth_t and the border value is replicated.
+
+This function calls under the hood the imfilter function of Images.jl
+
+The first argument must be a buffer of the same size of array.
+
+"""
 function filter_array!(buf::Array{T,4},array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
     if position == 2
        error("Filter_array: Inner array is not implemented yer")
