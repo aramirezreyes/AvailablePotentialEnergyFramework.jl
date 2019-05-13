@@ -16,9 +16,11 @@ z_up the maximum height that will be used
 
 """
 
-function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t, dx,dy, dz, dt, z_up)
+function getapebudget_old(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t, dx,dy, dz, dt, z_up)
 
-
+#***********Empty array generation***********#
+Udb2dx = similar(U)
+Vdb2dy = similar(V)
 #*************  APE **************
 b2      = B.*B/2
 APE_b2  = mean(b2,dims=(1,2))[1,1,:,:]./N2; 
@@ -26,30 +28,29 @@ APE_b2  = mean(b2,dims=(1,2))[1,1,:,:]./N2;
 # # # contourf(APE_b2)
 
 #************ KE ********************
-KE      = U.*U/2 + V.*V/2
-xBar_KE = mean(KE,dims=(1,2))[1,1,:,:]
+#KE      = U.*U/2 + V.*V/2
+xBar_KE = mean(U.*U/2 + V.*V/2,dims=(1,2))[1,1,:,:]
 
 #************ APE rate ***************
-xBar_APE_rate = zeros(length(z), length(t))
+xBar_APE_rate = Array{typeof(B[1])}(undef,length(z), length(t))
 xBar_APE_rate[:,1:end-1] = (APE_b2[:,2:end] - APE_b2[:,1:end-1])/dt; 
 xBar_APE_rate[:,end] = xBar_APE_rate[:,end-1]
 
 #*************  UdxB2 **************
-b2_ghost= zeros(length(x)+1,length(y)+1, length(z), length(t))
+b2_ghost= Array{typeof(B[1])}(undef, length(x)+1,length(y)+1, length(z), length(t))
 b2_ghost[1:end-1,1:end-1,:,:] = b2
 
 b2_ghost[end,1:end-1,:,:] = b2[1,:,:,:]
 b2_ghost[1:end-1,end,:,:] = b2[:,1,:,:]
-db2_dx  = (b2_ghost[2:end,:,:,:]-b2_ghost[1:end-1,:,:,:])/dx
-db2_dy  = (b2_ghost[:,2:end,:,:]-b2_ghost[:,1:end-1,:,:])/dy
-Udb2dx = U.*db2_dx[:,1:end-1,:,:]
-Vdb2dy = V.*db2_dy[1:end-1,:,:,:]
+
+@. Udb2dx = U*(b2_ghost[2:end,1:end-1,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/dx
+@. Vdb2dy = V*(b2_ghost[1:end-1,2:end,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/dy
 xBar_APE_Ub2 = mean(Udb2dx,dims=(1,2))[1,1,:,:]./N2
 xBar_APE_Vb2 = mean(Vdb2dy,dims=(1,2))[1,1,:,:]./N2
 
 # static stability WN2
-APE_WN2     = W.*B
-xBar_APE_WN2= mean(APE_WN2,dims=(1,2))[1,1,:,:]
+#APE_WN2     = W.*B
+xBar_APE_WN2= mean(W.*B,dims=(1,2))[1,1,:,:]
 
 # RAD generation
 xBar_APE_RAD     = mean(RAD_b.*B,dims=(1,2))[1,1,:,:]./N2;  
@@ -63,6 +64,7 @@ xBar_APE_DIA     = mean(Diabatic_other.*B,dims=(1,2))[1,1,:,:]./N2;
 k_up              = argmin(abs.(z.-z_up));
 z1                = z[1]:dz:z[k_up];
 rho01 = zeros(length(z1),length(t))
+rho02 = zeros(length(z1),length(t))
 xBar_APE_b21 = similar(rho01)
 xBar_APE_RAD1 = similar(rho01)
 xBar_APE_DIA1 = similar(rho01)
@@ -72,49 +74,182 @@ xBar_APE_Vb21 = similar(rho01)
 xBar_KE1 = similar(rho01)
 xBar_APE_rate1 = similar(rho01)
 for time in 1:length(t)
-rho01_itp         = LinearInterpolation(z, rho0[:,time]);
-xBar_APE_b21_itp  = LinearInterpolation(z, APE_b2[:,time]);
-xBar_APE_RAD1_itp = LinearInterpolation(z, xBar_APE_RAD[:,time]);
-xBar_APE_DIA1_itp = LinearInterpolation(z, xBar_APE_DIA[:,time]);
-xBar_APE_WN21_itp = LinearInterpolation(z, xBar_APE_WN2[:,time]);
-xBar_APE_Ub21_itp = LinearInterpolation(z, xBar_APE_Ub2[:,time]);
-xBar_APE_Vb21_itp = LinearInterpolation(z, xBar_APE_Vb2[:,time]);
-xBar_KE1_itp      = LinearInterpolation(z, xBar_KE[:,time]);
-xBar_APE_rate1_itp    = LinearInterpolation(z, xBar_APE_rate[:,time]);
-                    
-                    
-rho01[:,time]             = [rho01_itp(x) for x in z1]
-xBar_APE_b21[:,time]       = [xBar_APE_b21_itp(x) for x in z1]
-xBar_APE_RAD1[:,time]      = [xBar_APE_RAD1_itp(x) for x in z1]
-xBar_APE_DIA1[:,time]      = [xBar_APE_DIA1_itp(x) for x in z1]
-xBar_APE_WN21[:,time]      = [xBar_APE_WN21_itp(x) for x in z1]
-xBar_APE_Ub21[:,time]      = [xBar_APE_Ub21_itp(x) for x in z1]
-xBar_APE_Vb21[:,time]      = [xBar_APE_Vb21_itp(x) for x in z1]
-xBar_KE1[:,time]           = [xBar_KE1_itp(x) for x in z1]
-xBar_APE_rate1[:,time]     = [xBar_APE_rate1_itp(x) for x in z1]
+    rho01_itp         = LinearInterpolation(z, rho0[:,time]);
+    xBar_APE_b21_itp  = LinearInterpolation(z, APE_b2[:,time]);
+    xBar_APE_RAD1_itp = LinearInterpolation(z, xBar_APE_RAD[:,time]);
+    xBar_APE_DIA1_itp = LinearInterpolation(z, xBar_APE_DIA[:,time]);
+    xBar_APE_WN21_itp = LinearInterpolation(z, xBar_APE_WN2[:,time]);
+    xBar_APE_Ub21_itp = LinearInterpolation(z, xBar_APE_Ub2[:,time]);
+    xBar_APE_Vb21_itp = LinearInterpolation(z, xBar_APE_Vb2[:,time]);
+    xBar_KE1_itp      = LinearInterpolation(z, xBar_KE[:,time]);
+    xBar_APE_rate1_itp    = LinearInterpolation(z, xBar_APE_rate[:,time]);
+                        
+                        
+    rho01[:,time]              = [rho01_itp(x) for x in z1]
+    xBar_APE_b21[:,time]       = [xBar_APE_b21_itp(x) for x in z1]
+    xBar_APE_RAD1[:,time]      = [xBar_APE_RAD1_itp(x) for x in z1]
+    xBar_APE_DIA1[:,time]      = [xBar_APE_DIA1_itp(x) for x in z1]
+    xBar_APE_WN21[:,time]      = [xBar_APE_WN21_itp(x) for x in z1]
+    xBar_APE_Ub21[:,time]      = [xBar_APE_Ub21_itp(x) for x in z1]
+    xBar_APE_Vb21[:,time]      = [xBar_APE_Vb21_itp(x) for x in z1]
+    xBar_KE1[:,time]           = [xBar_KE1_itp(x) for x in z1]
+    xBar_APE_rate1[:,time]     = [xBar_APE_rate1_itp(x) for x in z1]
 end
 
 
 
 # vertical integration
-int_mass     = sum(rho01[:,:]*dz,dims=1)[1,:]
-int_KE       = sum(rho01[:,:].*xBar_KE1[:,:]*dz,dims=1)[1,:]
-int_APE      = sum(rho01[:,:].*xBar_APE_b21[:,:]*dz,dims=1)[1,:]
-int_APE_RAD  = sum(rho01[:,:].*xBar_APE_RAD1[:,:]*dz,dims=1)[1,:]
-int_APE_DIA  = sum(rho01[:,:].*xBar_APE_DIA1[:,:]*dz,dims=1)[1,:]
-int_APE_WN2  = sum(rho01[:,:].*xBar_APE_WN21[:,:]*dz,dims=1)[1,:]
-int_APE_Ub2  = sum(rho01[:,:].*xBar_APE_Ub21[:,:]*dz,dims=1)[1,:]
-int_APE_Vb2  = sum(rho01[:,:].*xBar_APE_Vb21[:,:]*dz,dims=1)[1,:]
-int_APE_rate = sum(rho01[:,:].*xBar_APE_rate1[:,:]*dz,dims=1)[1,:]
+int_mass     = sum(rho01.*dz,dims=1)[1,:]
+int_KE       = sum(rho01.*xBar_KE1.*dz,dims=1)[1,:]
+int_APE      = sum(rho01.*xBar_APE_b21.*dz,dims=1)[1,:]
+int_APE_RAD  = sum(rho01.*xBar_APE_RAD1.*dz,dims=1)[1,:]
+int_APE_DIA  = sum(rho01.*xBar_APE_DIA1.*dz,dims=1)[1,:]
+int_APE_WN2  = sum(rho01.*xBar_APE_WN21.*dz,dims=1)[1,:]
+int_APE_Ub2  = sum(rho01.*xBar_APE_Ub21.*dz,dims=1)[1,:]
+int_APE_Vb2  = sum(rho01.*xBar_APE_Vb21.*dz,dims=1)[1,:]
+int_APE_rate = sum(rho01.*xBar_APE_rate1.*dz,dims=1)[1,:]
 
 # surface flux contribution
-N2S         = N2[1,:]
-APE_Fs      = B[:,:,1,:].*Fs
-xBar_APE_Fs = mean(APE_Fs, dims=(1,2))[1,1,:]./N2S[1,1,:]; 
-residual    = int_APE_rate + int_APE_Ub2 + int_APE_Vb2+int_APE_WN2 - (int_APE_RAD + int_APE_DIA + xBar_APE_Fs)
+#N2S         = N2[1,:]
+#APE_Fs      = B[:,:,1,:].*Fs
+
+xBar_APE_Fs = mean(B[:,:,1,:].*Fs, dims=(1,2))[1,1,1,:]./N2[1,:];
+
+residual    = int_APE_rate .+ int_APE_Ub2 .+ int_APE_Vb2+int_APE_WN2 .- (int_APE_RAD .+ int_APE_DIA .+ xBar_APE_Fs)
 
 return (int_mass, int_KE, int_APE, int_APE_rate, int_APE_Ub2,int_APE_Vb2, int_APE_WN2, int_APE_RAD, int_APE_DIA, xBar_APE_Fs, residual)
 end
+
+"""
+-------------Computes the APE budgets budget---------------
+
+"""
+
+function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t, dx,dy, dz, dt, z_up)
+    N2 = reshape(N2,1,1,length(z),length(t)) 
+    #***********Empty array generation***********#
+    Udb2dx = similar(U)
+    Vdb2dy = similar(V)
+    buf    = similar(U)
+    #xBar_Fs = zeros(length(z), length(t))
+    xBar_KE = Array{typeof(B[1])}(undef,1,1,length(z), length(t))
+    APE_b2 = Array{typeof(B[1])}(undef,1,1,length(z), length(t))
+    xBar_APE_rate = Array{typeof(B[1])}(undef,length(z), length(t))
+    b2_ghost= Array{typeof(B[1])}(undef, length(x)+1,length(y)+1, length(z), length(t))
+    xBar_APE_Ub2 = Array{typeof(B[1])}(undef,1,1,length(z), length(t))
+    xBar_APE_Vb2 = Array{typeof(B[1])}(undef,1,1,length(z), length(t))
+    xBar_APE_WN2 = Array{typeof(B[1])}(undef,1,1,length(z), length(t))
+    xBar_APE_RAD = Array{typeof(B[1])}(undef,1,1,length(z), length(t))
+    xBar_APE_DIA = Array{typeof(B[1])}(undef,1,1,length(z), length(t))
+    xBar_APE_FS = Array{typeof(B[1])}(undef,1,1,length(z), length(t))
+    #*************  APE **************
+    @. buf      = B*B/2
+    mean!(APE_b2,buf);
+    @. APE_b2 = APE_b2/N2
+    @. b2_ghost[1:end-1,1:end-1,:,:] = buf
+    @. b2_ghost[end,1:end-1,:,:] = buf[1,:,:,:]
+    @. b2_ghost[1:end-1,end,:,:] = buf[:,1,:,:]
+ 
+    
+    #************ KE ********************
+    #KE      = U.*U/2 + V.*V/2
+    @. buf = U*U/2 + V*V/2
+    xBar_KE = mean!(xBar_KE,buf)
+
+    #************ APE rate ***************
+    
+    @. xBar_APE_rate[:,1:end-1] = (APE_b2[1,1,:,2:end] - APE_b2[1,1,:,1:end-1])/dt; 
+    @. xBar_APE_rate[:,end] = xBar_APE_rate[:,end-1]
+    
+    #*************  UdxB2 **************
+   
+    @. buf =    Udb2dx = U*(b2_ghost[2:end,1:end-1,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/dx
+    mean!(xBar_APE_Ub2,buf)
+
+    @. buf = V*(b2_ghost[1:end-1,2:end,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/dy
+    
+    mean!(xBar_APE_Vb2,buf)
+
+    @. xBar_APE_Ub2 = xBar_APE_Ub2/N2
+    @. xBar_APE_Vb2 = xBar_APE_Vb2/N2
+    
+    # static stability WN2
+    #APE_WN2     = W.*B
+    @. buf = W*B
+    mean!(xBar_APE_WN2,buf)
+    
+    # RAD generation
+    @. buf = RAD_b.*B
+    mean!(xBar_APE_RAD,buf);  
+    @. xBar_APE_RAD = xBar_APE_RAD / N2
+    
+    # Diabatic_other
+    @. buf = Diabatic_other.*B
+    mean!(xBar_APE_DIA,buf)
+    @. xBar_APE_DIA = xBar_APE_DIA/N2;  
+    
+    # Surface fluxes contribution 
+        
+    xBar_APE_Fs = mean(B[:,:,1,:].*Fs, dims=(1,2))[1,1,1,:]./N2[1,1,1,:];
+    # interpolation 
+    k_up              = argmin(abs.(z.-z_up));
+    z1                = z[1]:dz:z[k_up];
+    rho01 = zeros(length(z1),length(t))
+    rho02 = zeros(length(z1),length(t))
+    xBar_APE_b21 = similar(rho01)
+    xBar_APE_RAD1 = similar(rho01)
+    xBar_APE_DIA1 = similar(rho01)
+    xBar_APE_WN21 = similar(rho01)
+    xBar_APE_Ub21 = similar(rho01)
+    xBar_APE_Vb21 = similar(rho01)
+    xBar_KE1 = similar(rho01)
+    xBar_APE_rate1 = similar(rho01)
+    @inbounds for time in 1:length(t)
+        rho01_itp         = LinearInterpolation(z, rho0[:,time]);
+        xBar_APE_b21_itp  = LinearInterpolation(z, APE_b2[1,1,:,time]);
+        xBar_APE_RAD1_itp = LinearInterpolation(z, xBar_APE_RAD[1,1,:,time]);
+        xBar_APE_DIA1_itp = LinearInterpolation(z, xBar_APE_DIA[1,1,:,time]);
+        xBar_APE_WN21_itp = LinearInterpolation(z, xBar_APE_WN2[1,1,:,time]);
+        xBar_APE_Ub21_itp = LinearInterpolation(z, xBar_APE_Ub2[1,1,:,time]);
+        xBar_APE_Vb21_itp = LinearInterpolation(z, xBar_APE_Vb2[1,1,:,time]);
+        xBar_KE1_itp      = LinearInterpolation(z, xBar_KE[1,1,:,time]);
+        xBar_APE_rate1_itp    = LinearInterpolation(z, xBar_APE_rate[:,time]);
+                            
+                            
+        rho01[:,time]              = [rho01_itp(x) for x in z1]
+        xBar_APE_b21[:,time]       = [xBar_APE_b21_itp(x) for x in z1]
+        xBar_APE_RAD1[:,time]      = [xBar_APE_RAD1_itp(x) for x in z1]
+        xBar_APE_DIA1[:,time]      = [xBar_APE_DIA1_itp(x) for x in z1]
+        xBar_APE_WN21[:,time]      = [xBar_APE_WN21_itp(x) for x in z1]
+        xBar_APE_Ub21[:,time]      = [xBar_APE_Ub21_itp(x) for x in z1]
+        xBar_APE_Vb21[:,time]      = [xBar_APE_Vb21_itp(x) for x in z1]
+        xBar_KE1[:,time]           = [xBar_KE1_itp(x) for x in z1]
+        xBar_APE_rate1[:,time]     = [xBar_APE_rate1_itp(x) for x in z1]
+    end
+    
+    
+    
+    # vertical integration
+    dmass = rho01.*dz
+    int_mass     = sum(dmass,dims=1)[1,:]
+    int_KE       = sum(dmass*xBar_KE1,dims=1)[1,:]
+    int_APE      = sum(dmass.*xBar_APE_b21,dims=1)[1,:]
+    int_APE_RAD  = sum(dmass.*xBar_APE_RAD1,dims=1)[1,:]
+    int_APE_DIA  = sum(dmass.*xBar_APE_DIA1,dims=1)[1,:]
+    int_APE_WN2  = sum(dmass.*xBar_APE_WN21,dims=1)[1,:]
+    int_APE_Ub2  = sum(dmass.*xBar_APE_Ub21,dims=1)[1,:]
+    int_APE_Vb2  = sum(dmass.*xBar_APE_Vb21,dims=1)[1,:]
+    int_APE_rate = sum(dmass.*xBar_APE_rate1,dims=1)[1,:]
+    
+    # surface flux contribution
+    #N2S         = N2[1,:]
+    #APE_Fs      = B[:,:,1,:].*Fs
+    
+     
+    residual    = int_APE_rate .+ int_APE_Ub2 .+ int_APE_Vb2+int_APE_WN2 .- (int_APE_RAD .+ int_APE_DIA .+ xBar_APE_Fs)
+    
+    return (int_mass, int_KE, int_APE, int_APE_rate, int_APE_Ub2,int_APE_Vb2, int_APE_WN2, int_APE_RAD, int_APE_DIA, xBar_APE_Fs, residual)
+    end
 
 """
 -------------This function computes the buoyancy budget---------------
@@ -129,36 +264,42 @@ x,y,z,t the coordinate vectors
 
 """
 function buoyancybudget(B, RAD_b, Fs, U,V, W, N2, dx,dy, dz, dt, x,y, z, t)
-
+#************ Array creation **************#
+Qs      = zeros(typeof(B[1]),length(x),length(y),length(z),length(t))
+B_ghost = Array{typeof(B[1])}(undef, length(x)+1,length(y)+1, length(z), length(t))
+WN2     = similar(W)
+dBdt    = similar(B)
+UdBdx   = similar(U)
+VdBdy   = similar(U)
 #************ WN2 *****************
-WN2 = zeros(size(W))
-WN2  .= reshape(N2,(1,1,size(N2,1),size(N2,2))).*(W[:,:,:,:])
 
-#*************  UdxB2 **************
-B_ghost= zeros(length(x)+1,length(y)+1, length(z), length(t))
-B_ghost[1:end-1,1:end-1,:,:] = B
-B_ghost[end,1:end-1,:,:] = B[1,:,:,:]
-B_ghost[1:end-1,end,:,:] = B[:,1,:,:]
-dBdx  = (B_ghost[2:end,1:end-1,:,:]-B_ghost[1:end-1,1:end-1,:,:])/dx
-UdBdx = U.*dBdx
-dBdy  = (B_ghost[1:end-1,2:end,:,:]-B_ghost[1:end-1,1:end-1,:,:])/dy
-VdBdy = V.*dBdy
-#************ Fs ******************
-Qs    = zeros(length(x), length(y),length(t), length(z))
-# # # Qs[:,:,:,1]   = Fs[:,1:length(t)]/(2*dz); 
-#a=string(size(Qs))
-#b=string(size(Fs))
-#println("Size of qs: $a")
-#println("Size of Fs: $b")
-Qs[:,:,:,1]   = Fs[:,:,1:length(t)]./(dz); 
+ WN2  .= reshape(N2,(1,1,size(N2,1),size(N2,2))).*W
 
-Qs    = permutedims(Qs, [1, 2, 4,3])
-#************ dBdt *************
-dBdt            = zeros(length(x),length(y),length(z), length(t))
-dBdt[:,:,:,1:end-1] = (B[:,:,:,2:end] - B[:,:,:,1:end-1])/dt; 
-dBdt[:,:,:,end]     = dBdt[:,:,:,end-1]
-#***************
-Diabatic_other  = dBdt + UdBdx + VdBdy + WN2 - RAD_b - Qs
+#*************  Advection **************
+
+@. B_ghost[1:end-1,1:end-1,:,:] = B
+@. B_ghost[end,1:end-1,:,:] = B[1,:,:,:]
+@. B_ghost[1:end-1,end,:,:] = B[:,1,:,:]
+
+@. UdBdx = U*(B_ghost[2:end,1:end-1,:,:]-B_ghost[1:end-1,1:end-1,:,:])/dx
+@. VdBdy = V*(B_ghost[1:end-1,2:end,:,:]-B_ghost[1:end-1,1:end-1,:,:])/dy
+
+
+# @. UdBdx[1:end-1,:,:,:] .= U[1:end-1,:,:,:]*(B[2:end,:,:,:]-B[1:end-1,:,:,:])/dx
+# @. UdBdx[end,:,:,:] = U[end,:,:,:]*(B[1,:,:,:]-B[end,:,:,:])/dx
+
+# @. VdBdy[:,1:end-1,:,:] = V[:,1:end-1,:,:].*(B[:,2:end,:,:]-B[:,1:end-1,:,:])/dy
+# @. VdBdy[:,end,:,:] = V[:,end,:,:]*(B[:,1,:,:]-B[:,end,:,:])/dy
+
+Qs[:,:,1,:] .= Fs./dz
+#************ Time evolution *************#
+
+@. dBdt[:,:,:,1:end-1] = (B[:,:,:,2:end] - B[:,:,:,1:end-1])/dt; 
+@. dBdt[:,:,:,end]     = dBdt[:,:,:,end-1]/dt
+#*************** Return ********************#
+
+Diabatic_other  = dBdt .+ UdBdx .+ VdBdy .+ WN2 .- RAD_b .- Qs
+
 return dBdt, UdBdx,VdBdy, WN2, Qs, Diabatic_other
 end
 
@@ -234,8 +375,8 @@ rho0    = dropdims(xBar_Pt/R./xBar_Tv,dims=(1,2))
 
 # compute N2 the Brunt-Vaisala frequency squared
 dxBar_Tv_dz = zeros(1,length(z),size(var_Tv,4))
-dxBar_Tv_dz[1,1:end-1,:] = (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end]-z[1:end-1])
-dxBar_Tv_dz[1,end,:] = dxBar_Tv_dz[1,end-1,:]
+@. dxBar_Tv_dz[1,1:end-1,:] = (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])/(z[2:end]-z[1:end-1])
+@. dxBar_Tv_dz[1,end,:] = dxBar_Tv_dz[1,end-1,:]
 
 
 N2  = g*(dxBar_Tv_dz .+ g/heat_capacity)[1,:,:]./xBar_Tv[1,1,:,:]  #Why is this using virtual and not potential, why g/cp check
@@ -249,7 +390,7 @@ for i=1:length(bb)
     end
 end
 
-B       = g*var_ThetaV./xBar_ThetaV
+B      = g.*var_ThetaV./xBar_ThetaV
 RAD   .= RAD.*(g./xBar_Tv) # convert unit to buoyancy
 
 PP         = []
