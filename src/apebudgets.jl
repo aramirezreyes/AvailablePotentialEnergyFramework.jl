@@ -204,14 +204,15 @@ Tvs     = Ts*(1+epsilon*qs)
 @. SHF = g/(1*heat_capacity*Ts)*(SHF) # rho := 1
 @. LHF = g/(1*heat_capacity*Ts)*(epsilon*heat_capacity*Ts/L*LHF) # rho := 1
 @. SHF  = SHF + LHF
-@. PP = PP .+ reshape(P0,(1,1,kz,1))
 
+ PP .= PP .+ reshape(P0,(1,1,kz,1))
+ xBar_Pt     = mean(PP,dims=(1,2)) # use first 20-day mean as the reference
     c1 = (R/heat_capacity)
 ThetaV  .= Tv.*(PP./reshape(P0,(1,1,kz,1))).^c1 #Virtual potential temp
 
 
 println(" $exp_name Smoothing data (this is the longest part)... ")
-getsmoothdata!(U,V,W, Tv, ThetaV, RAD, Fs, smooth_x,smooth_y,smooth_time,1)
+getsmoothdata!(U,V,W, Tv, ThetaV, RAD, SHF, smooth_x,smooth_y,smooth_time,1)
 
 
 
@@ -222,7 +223,7 @@ var_Tv = Tv .- mean(Tv,dims=(1,2))
 
 var_ThetaV = ThetaV .- mean(ThetaV,dims=(1,2))
 xBar_ThetaV = mean(ThetaV,dims=(1,2)) 
-xBar_Pt     = mean(Pt,dims=(1,2)) # use first 20-day mean as the reference
+
 #var_ThetaV = zeros(size(ThetaV))
 #var_Tv = zeros(size(ThetaV))
 
@@ -252,8 +253,6 @@ B       = g*var_ThetaV./xBar_ThetaV
 RAD   .= RAD.*(g./xBar_Tv) # convert unit to buoyancy
 
 PP         = []
-P_total    = []
-RAD        = []
 T          = []
 ThetaV     = []
 Tv         = []
@@ -261,14 +260,14 @@ composite  = []
 qv         = []
 var_ThetaV = []
 var_Tv     = []
-GC.gc()
+
 println(" $exp_name : Computing buoyancy budget... ")
 # Buoyancy budget
 dz          = 50
 dBdt, UdBdx,VdBd, WN2, Qs, Diabatic_other = buoyancybudget(B, RAD, SHF, U,V ,W, N2, dx,dy, dz, dt, x,y, z, 1:size(B,4))
 GC.gc()
 dia_a = Diabatic_other .- mean(Diabatic_other,dims=(1,2))
-rad_a = RAD_b .- mean(RAD_b,dims=(1,2))
+rad_a = RAD .- mean(RAD,dims=(1,2))
 B_a   =  B .- mean(B,dims=(1,2))
 #dia_ape = dia_a.*B_a
 #rad_ape = rad_a.*B_a
