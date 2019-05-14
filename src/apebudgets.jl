@@ -352,9 +352,27 @@ Tvs     = Ts*(1+epsilon*qs)
 ThetaV  .= Tv.*(PP./reshape(P0,(1,1,kz,1))).^c1 #Virtual potential temp
 
 
-println(" $exp_name Smoothing data (this is the longest part)... ")
-getsmoothdata!(U,V,W, Tv, ThetaV, RAD, SHF, smooth_x,smooth_y,smooth_time,1)
+#println(" $exp_name Smoothing data (this is the longest part)... ")
+#getsmoothdata!(U,V,W, Tv, ThetaV, RAD, SHF, smooth_x,smooth_y,smooth_time,1)
 
+println(" $exp_name: Smoothing data (this is the longest part)... ")
+#getsmoothdata!(U,V,W, Tv, ThetaV, RAD, SHF, smooth_x,smooth_y,smooth_time,1)
+
+
+buf3d = similar(U)
+buf2d = similar(SHF)
+filter_array!(buf3d,U,smooth_x,smooth_time,position)
+filter_array!(buf3d,V,smooth_x,smooth_time,position)
+filter_array!(buf3d,W,smooth_x,smooth_time,position)
+filter_array!(buf3d,Tv,smooth_x,smooth_time,position)
+filter_array!(buf3d,ThetaV,smooth_x,smooth_time,position)
+filter_array!(buf3d,RAD,smooth_x,smooth_time,position)
+filter_array!(buf2d,SHF,smooth_x,smooth_time,position)
+buf3d = []
+buf2d = []
+
+println(" $exp_name: Finished smoothing data... ")
+println(size(ThetaV))
 
 
 
