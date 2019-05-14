@@ -110,18 +110,18 @@ function kernelt(window_t)
     if !isodd(window_t)
         window_t += 1
     end
-    kernel_t = centered(ones(window_t)/(window_t))
+    kernel_t = centered(ones(window_t)./(window_t))
 end
 
 function kernel2d(window_h)
     if !isodd(window_h)
         window_h += 1
     end
-    kernel_h = (ones(window_h)/(window_h))
+    kernel_h = (ones(window_h)./(window_h))
     return  kernelfactors(( centered(kernel_h), centered(kernel_h) ))
 end
 
-function kernel4d(window_h,window_t)
+function kernel4d(window_h,window_t,T::Type=Float64)
     if !isodd(window_h)
         window_h += 1
     end
@@ -129,36 +129,45 @@ function kernel4d(window_h,window_t)
         window_t += 1
     end
 
-    kernel_h = ones(window_h)/(window_h)
-    return kernelfactors(( centered(kernel_h), centered(kernel_h), centered([1.0]), centered([1.0]) ))
+    kernel_h = ones(T,window_h)./(window_h)
+    return kernelfactors(( centered(kernel_h), centered(kernel_h), centered([T(1.0)]), centered([T(1.0)]) ))
 end
 
-function kernel3d(window_h,window_t)
+function kernel3d(window_h,window_t,T::Type=Float64)
    if !isodd(window_h)
         window_h += 1
     end
     if !isodd(window_t)
         window_t += 1
     end
-    kernel_h = ones(window_h)/(window_h)
-    return  kernelfactors(( centered(kernel_h), centered(kernel_h), centered([1.0]) ))
+    kernel_h = ones(T,window_h)./(window_h)
+    return  kernelfactors(( centered(kernel_h), centered(kernel_h), centered([T(1.0)]) ))
 end
 
-function kernel4d_t(window_t)
+# function kernel4d_t(window_t)
+#     if !isodd(window_t)
+#         window_t += 1
+#     end
+#     kernel_t = ones(window_t)/(window_t)
+
+#     return kernelfactors((centered([1.0]), centered([1.0]),centered([1.0]),centered(kernel_t)))
+# end
+
+function kernel4d_t(window_t,T::Type=Float64)
     if !isodd(window_t)
         window_t += 1
     end
-    kernel_t = ones(window_t)/(window_t)
+    kernel_t = ones(T,window_t)./(window_t)
 
-    return kernelfactors((centered([1.0]), centered([1.0]),centered([1.0]),centered(kernel_t)))
+    return kernelfactors(( centered([T(1.0)]), centered([T(1.0)]), centered([T(1.0)]), centered(kernel_t) ))
 end
 
-function kernel3d_t(window_t)
+function kernel3d_t(window_t,T::Type=Float64)
     if !isodd(window_t)
         window_t += 1
     end
-    kernel_t = ones(window_t)/(window_t)
-    return  kernelfactors((centered([1.0]), centered([1.0]), centered(kernel_t)))
+    kernel_t = ones(T,window_t)./(window_t)
+    return  kernelfactors(( centered([T(1.0)]), centered([T(1.0)]), centered(kernel_t) ))
 end
 """
     filter_array_2!(array,smooth_x,smooth_t,position)
@@ -225,20 +234,30 @@ The first argument must be a buffer of the same size of array.
 """
 function filter_array!(buf::Array{T,4},array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
     if position == 2
-       error("Filter_array: Inner array is not implemented yer")
+       error("Filter_array: Inner array is not implemented yet")
     else
-        imfilter!(buf,array, kernel4d(smooth_x,smooth_time),"circular")
-        imfilter!(array,buf,kernel4d_t(smooth_time),"symmetric")
+        imfilter!(buf,array,kernel4d(smooth_x,smooth_time,T)[1:2],"circular")
+        imfilter!(array,buf,(kernel4d_t(smooth_time,T)[4],),"symmetric")
     end
 #        return filtered
 end    
 
+# function filter_array!(buf::Array{T,4},array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
+#     if position == 2
+#        error("Filter_array: Inner array is not implemented yer")
+#     else
+#         imfilter!(buf,array,kernel4d(smooth_x,smooth_time),"circular")
+#         imfilter!(array,buf,kernel4d_t(smooth_time),"symmetric")
+#     end
+# #        return filtered
+# end 
+
 function filter_array!(buf::Array{T,3},array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
     if position==2
-       error("Filter_array: Inner array is not implemented yer")
+       error("Filter_array: Inner array is not implemented yet")
     else
-        imfilter!(buf,array, kernel3d(smooth_x,smooth_time),"circular")
-        imfilter!(array,buf,kernel3d_t(smooth_time),"symmetric")
+        imfilter!(buf,array, kernel3d(smooth_x,smooth_time,T)[1,2],"circular")
+        imfilter!(array,buf,(kernel3d_t(smooth_time,T)[3],),"symmetric")
     end
 end
 
