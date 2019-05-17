@@ -16,6 +16,7 @@ export
     filter_array!,
     filter_array_2!,
     filter_array_time,
+    filter_array,
     getsmoothdata!,
     getsmoothdata_nospace,
     #Data structures
