@@ -256,7 +256,7 @@ function filter_array!(buf::Array{T,3},array::Array{T,3},smooth_x,smooth_time,po
     if position==2
        error("Filter_array: Inner array is not implemented yet")
     else
-        imfilter!(buf,array, kernel3d(smooth_x,smooth_time,T)[1,2],"circular")
+        imfilter!(buf,array, kernel3d(smooth_x,smooth_time,T)[1:2],"circular")
         imfilter!(array,buf,(kernel3d_t(smooth_time,T)[3],),"symmetric")
     end
 end
