@@ -261,7 +261,37 @@ function filter_array!(buf::Array{T,3},array::Array{T,3},smooth_x,smooth_time,po
     end
 end
 
-                               
+"""
+filter_array(array,smooth_x,smooth_t,position)
+
+Filters the input arrayusing a moving mean. In the first two dimensions the window width is smooth_x and the border is treated as circular (for doubly periodic domains). In the space dimension the width is smooth_t and the border value is replicated.
+
+This function calls under the hood the imfilter function of Images.jl
+
+The first argument must be a buffer of the same size of array.
+
+"""
+function filter_array(array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
+if position == 2
+   error("Filter_array: Inner array is not implemented yet")
+else
+    buf = similar(array)
+    imfilter!(buf,array,kernel4d(smooth_x,smooth_time,T)[1:2],"circular")
+    imfilter!(array,buf,(kernel4d_t(smooth_time,T)[4],),"symmetric")
+end
+#        return filtered
+end    
+
+
+function filter_array(array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
+if position==2
+   error("Filter_array: Inner array is not implemented yet")
+else
+    buf = similar(array)
+    imfilter!(buf,array, kernel3d(smooth_x,smooth_time,T)[1,2],"circular")
+    imfilter!(array,buf,(kernel3d_t(smooth_time,T)[3],),"symmetric")
+end
+end                              
                                         
 function filter_array_nospace(array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
     if position==2
