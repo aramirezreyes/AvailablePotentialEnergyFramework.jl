@@ -271,27 +271,29 @@ This function calls under the hood the imfilter function of Images.jl
 The first argument must be a buffer of the same size of array.
 
 """
+
 function filter_array(array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
-if position == 2
-   error("Filter_array: Inner array is not implemented yet")
-else
-    buf = similar(array)
-    imfilter!(buf,array,kernel4d(smooth_x,smooth_time,T)[1:2],"circular")
-    imfilter!(array,buf,(kernel4d_t(smooth_time,T)[4],),"symmetric")
-end
-#        return filtered
+    if position == 2
+       error("Filter_array: Inner array is not implemented yet")
+    else
+        buf = similar(array)
+        imfilter!(buf,array,kernel4d(smooth_x,smooth_time,T)[1:2],"circular")
+        imfilter!(array,buf,(kernel4d_t(smooth_time,T)[4],),"symmetric")
+    end
+        return array
 end    
 
 
 function filter_array(array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
-if position==2
-   error("Filter_array: Inner array is not implemented yet")
-else
-    buf = similar(array)
-    imfilter!(buf,array, kernel3d(smooth_x,smooth_time,T)[1,2],"circular")
-    imfilter!(array,buf,(kernel3d_t(smooth_time,T)[3],),"symmetric")
+    if position==2
+       error("Filter_array: Inner array is not implemented yet")
+    else
+        buf = similar(array)
+        imfilter!(buf,array, kernel3d(smooth_x,smooth_time,T)[1:2],"circular")
+        imfilter!(array,buf,(kernel3d_t(smooth_time,T)[3],),"symmetric")
+    end
+    return array
 end
-end                              
                                         
 function filter_array_nospace(array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
     if position==2
