@@ -113,13 +113,7 @@ function kernelt(window_t)
     kernel_t = centered(ones(window_t)./(window_t))
 end
 
-function kernel2d(window_h)
-    if !isodd(window_h)
-        window_h += 1
-    end
-    kernel_h = (ones(window_h)./(window_h))
-    return  kernelfactors(( centered(kernel_h), centered(kernel_h) ))
-end
+
 
 function kernel4d(window_h,window_t,T::Type=Float64)
     if !isodd(window_h)
@@ -143,6 +137,19 @@ function kernel3d(window_h,window_t,T::Type=Float64)
     kernel_h = ones(T,window_h)./(window_h)
     return  kernelfactors(( centered(kernel_h), centered(kernel_h), centered([T(1.0)]) ))
 end
+
+
+function kernel2d(window_h,T::Type=Float64)
+   if !isodd(window_h)
+        window_h += 1
+    end
+    if !isodd(window_t)
+        window_t += 1
+    end
+    kernel_h = ones(T,window_h)./(window_h)
+    return  kernelfactors(( centered(kernel_h), centered(kernel_h) ))
+end
+
 
 # function kernel4d_t(window_t)
 #     if !isodd(window_t)

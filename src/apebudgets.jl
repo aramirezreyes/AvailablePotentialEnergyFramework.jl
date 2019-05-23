@@ -131,34 +131,34 @@ end
 """
 
 function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t, dx,dy, dz, dt, z_up)
-    N2 = reshape(N2,1,1,length(z),length(t)) 
+    N2            = reshape(N2,1,1,length(z),length(t)) 
     #***********Empty array generation***********#
-    T = typeof(B[1])
-    lt = length(t)
-    lz = length(z)
-    buf    = similar(U)
-    xBar_KE = Array{T}(undef,1,1,lz, lt)
-    APE_b2 = Array{T}(undef,1,1,lz, lt)
+    T             = typeof(B[1])
+    lt            = length(t)
+    lz            = length(z)
+    buf           = similar(U)
+    xBar_KE       = Array{T}(undef,1,1,lz, lt)
+    APE_b2        = Array{T}(undef,1,1,lz, lt)
     xBar_APE_rate = Array{T}(undef,lz, lt)
-    b2_ghost= Array{T}(undef, length(x)+1,length(y)+1, lz, lt)
-    xBar_APE_Ub2 = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_Vb2 = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_WN2 = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_RAD = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_DIA = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_FS = Array{T}(undef,1,1,lz, lt)
+    b2_ghost      = Array{T}(undef, length(x)+1,length(y)+1, lz, lt)
+    xBar_APE_Ub2  = Array{T}(undef,1,1,lz, lt)
+    xBar_APE_Vb2  = Array{T}(undef,1,1,lz, lt)
+    xBar_APE_WN2  = Array{T}(undef,1,1,lz, lt)
+    xBar_APE_RAD  = Array{T}(undef,1,1,lz, lt)
+    xBar_APE_DIA  = Array{T}(undef,1,1,lz, lt)
+    xBar_APE_FS   = Array{T}(undef,1,1,lz, lt)
     #*************  APE **************
-    @. buf      = B*B/2
+    @. buf                           = B*B/2
     mean!(APE_b2,buf);
-    @. APE_b2 = APE_b2/N2
+    @. APE_b2                        = APE_b2/N2
     @. b2_ghost[1:end-1,1:end-1,:,:] = buf
-    @. b2_ghost[end,1:end-1,:,:] = buf[1,:,:,:]
-    @. b2_ghost[1:end-1,end,:,:] = buf[:,1,:,:]
+    @. b2_ghost[end,1:end-1,:,:]     = buf[1,:,:,:]
+    @. b2_ghost[1:end-1,end,:,:]     = buf[:,1,:,:]
  
     
     #************ KE ********************
     #KE      = U.*U/2 + V.*V/2
-    @. buf = U*U/2 + V*V/2
+    @. buf  = U*U/2 + V*V/2
     xBar_KE = mean!(xBar_KE,buf)
 
     #************ APE rate ***************
@@ -186,7 +186,7 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     # RAD generation
     @. buf = RAD_b.*B
     mean!(xBar_APE_RAD,buf);  
-    @. xBar_APE_RAD = xBar_APE_RAD / N2
+    @. xBar_APE_RAD = xBar_APE_RAD/N2
     
     # Diabatic_other
     @. buf = Diabatic_other.*B
@@ -195,7 +195,8 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     
     # Surface fluxes contribution 
         
-    xBar_APE_Fs = mean(B[:,:,1,:].*Fs, dims=(1,2))[1,1,1,:]./N2[1,1,1,:];
+    xBar_APE_Fs  = mean(B[:,:,1,:].*Fs, dims=(1,2))[1,1,1,:]./N2[1,1,1,:];
+  
     # interpolation 
     k_up              = argmin(abs.(z.-z_up));
     z1                = z[1]:dz:z[k_up];
@@ -245,139 +246,9 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
             end
         end
     end
-
-    
-     
-    residual    = int_APE_rate .+ int_APE_Ub2 .+ int_APE_Vb2 .+ int_APE_WN2 .- (int_APE_RAD .+ int_APE_DIA .+ xBar_APE_Fs)
-    
+    residual    = int_APE_rate .+ int_APE_Ub2 .+ int_APE_Vb2 .+ int_APE_WN2 .- (int_APE_RAD .+ int_APE_DIA .+ xBar_APE_Fs) 
     return (int_mass, int_KE, int_APE, int_APE_rate, int_APE_Ub2,int_APE_Vb2, int_APE_WN2, int_APE_RAD, int_APE_DIA, xBar_APE_Fs, residual)
     end
-
-
-
-function getapebudget_views(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t, dx,dy, dz, dt, z_up)
-    N2 = reshape(N2,1,1,length(z),length(t)) 
-    #***********Empty array generation***********#
-    T = typeof(B[1])
-    lt = length(t)
-    lz = length(z)
-    buf    = similar(U)
-    xBar_KE = Array{T}(undef,1,1,lz, lt)
-    APE_b2 = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_rate = Array{T}(undef,lz, lt)
-    b2_ghost= Array{T}(undef, length(x)+1,length(y)+1, lz, lt)
-    xBar_APE_Ub2 = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_Vb2 = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_WN2 = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_RAD = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_DIA = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_FS = Array{T}(undef,1,1,lz, lt)
-    #*************  APE **************
-    @. buf      = B*B/2
-    mean!(APE_b2,buf);
-    @. APE_b2 = APE_b2/N2
-    @. b2_ghost[1:end-1,1:end-1,:,:] = buf
-    @. b2_ghost[end,1:end-1,:,:] = buf[1,:,:,:]
-    @. b2_ghost[1:end-1,end,:,:] = buf[:,1,:,:]
- 
-    
-    #************ KE ********************
-    #KE      = U.*U/2 + V.*V/2
-    @. buf = U*U/2 + V*V/2
-    xBar_KE = mean!(xBar_KE,buf)
-
-    #************ APE rate ***************
-    
-    @. xBar_APE_rate[:,1:end-1] = (APE_b2[1,1,:,2:end] - APE_b2[1,1,:,1:end-1])/dt; 
-    @. xBar_APE_rate[:,end] = xBar_APE_rate[:,end-1]
-    
-    #*************  UdxB2 **************
-   
-    @. buf = U*(b2_ghost[2:end,1:end-1,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/dx
-    mean!(xBar_APE_Ub2,buf)
-
-    @. buf = V*(b2_ghost[1:end-1,2:end,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/dy
- 
-    mean!(xBar_APE_Vb2,buf)
-
-    @. xBar_APE_Ub2 = xBar_APE_Ub2/N2
-    @. xBar_APE_Vb2 = xBar_APE_Vb2/N2
-    
-    # static stability WN2
-    #APE_WN2     = W.*B
-    @. buf = W*B
-    mean!(xBar_APE_WN2,buf)
-    
-    # RAD generation
-    @. buf = RAD_b.*B
-    mean!(xBar_APE_RAD,buf);  
-    @. xBar_APE_RAD = xBar_APE_RAD / N2
-    
-    # Diabatic_other
-    @. buf = Diabatic_other.*B
-    mean!(xBar_APE_DIA,buf)
-    @. xBar_APE_DIA = xBar_APE_DIA/N2;  
-    
-    # Surface fluxes contribution 
-        
-    xBar_APE_Fs = mean(B[:,:,1,:].*Fs, dims=(1,2))[1,1,1,:]./N2[1,1,1,:];
-    # interpolation 
-    k_up              = argmin(abs.(z.-z_up));
-    z1                = z[1]:dz:z[k_up];
-    
-    int_mass      = Array{T}(undef,lt)
-    int_KE        = similar(int_mass)
-    int_APE       = similar(int_mass)
-    int_APE_RAD   = similar(int_mass)
-    int_APE_DIA   = similar(int_mass)
-    int_APE_WN2   = similar(int_mass)
-    int_APE_Ub2   = similar(int_mass)
-    int_APE_Vb2   = similar(int_mass)
-    int_APE_rate  = similar(int_mass)
-    @inbounds for time in 1:lt
-        rho01_itp         = interpolate((z,), rho0[:,time],Gridded(Linear()))
-        xBar_APE_b21_itp  = interpolate((z,), APE_b2[1,1,:,time],Gridded(Linear()))
-        xBar_APE_RAD1_itp = interpolate((z,), xBar_APE_RAD[1,1,:,time],Gridded(Linear()))
-        xBar_APE_DIA1_itp = interpolate((z,), xBar_APE_DIA[1,1,:,time],Gridded(Linear()))
-        xBar_APE_WN21_itp = interpolate((z,), xBar_APE_WN2[1,1,:,time],Gridded(Linear()))
-        xBar_APE_Ub21_itp = interpolate((z,), xBar_APE_Ub2[1,1,:,time],Gridded(Linear()))
-        xBar_APE_Vb21_itp = interpolate((z,), xBar_APE_Vb2[1,1,:,time],Gridded(Linear()))
-        xBar_KE1_itp      = interpolate((z,), xBar_KE[1,1,:,time],Gridded(Linear()))
-        xBar_APE_rate1_itp    = interpolate((z,), xBar_APE_rate[:,time],Gridded(Linear()))
-
-        @inbounds for x in z1
-            mass = dz*rho01_itp(x)
-            if time == 1
-                int_mass[time]         = mass
-                int_APE[time]          = mass*xBar_APE_b21_itp(x) 
-                int_APE_RAD[time]      = mass*xBar_APE_RAD1_itp(x) 
-                int_APE_DIA[time]      = mass*xBar_APE_DIA1_itp(x) 
-                int_APE_WN2[time]      = mass*xBar_APE_WN21_itp(x) 
-                int_APE_Ub2[time]      = mass*xBar_APE_Ub21_itp(x) 
-                int_APE_Vb2[time]      = mass*xBar_APE_Vb21_itp(x) 
-                int_KE[time]           = mass*xBar_KE1_itp(x) 
-                int_APE_rate[time]     = mass*xBar_APE_rate1_itp(x)
-            else
-                int_mass[time]         += mass
-                int_APE[time]          += mass*xBar_APE_b21_itp(x) 
-                int_APE_RAD[time]      += mass*xBar_APE_RAD1_itp(x) 
-                int_APE_DIA[time]      += mass*xBar_APE_DIA1_itp(x) 
-                int_APE_WN2[time]      += mass*xBar_APE_WN21_itp(x) 
-                int_APE_Ub2[time]      += mass*xBar_APE_Ub21_itp(x) 
-                int_APE_Vb2[time]      += mass*xBar_APE_Vb21_itp(x) 
-                int_KE[time]           += mass*xBar_KE1_itp(x) 
-                int_APE_rate[time]     += mass*xBar_APE_rate1_itp(x) 
-            end
-        end
-    end
-
-    
-     
-    residual    = int_APE_rate .+ int_APE_Ub2 .+ int_APE_Vb2 .+ int_APE_WN2 .- (int_APE_RAD .+ int_APE_DIA .+ xBar_APE_Fs)
-    
-    return (int_mass, int_KE, int_APE, int_APE_rate, int_APE_Ub2,int_APE_Vb2, int_APE_WN2, int_APE_RAD, int_APE_DIA, xBar_APE_Fs, residual)
-    end
-
 
 
 """

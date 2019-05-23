@@ -21,8 +21,8 @@ end
 
 
 function compute_N2(var_Tv,xBar_Tv,z)
-
-    N2              = zeros(length(z),size(var_Tv,4))
+    T = typeof(xBar_Tv[1])
+    N2              = zeros(T,length(z),size(var_Tv,4))
     N2[1:end-1,:]  .= (xBar_Tv[1,1,2:end,:].-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1])
     N2[end,:]      .= N2[end-1,:]
 
