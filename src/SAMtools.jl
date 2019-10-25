@@ -33,6 +33,7 @@ export
     findlocalmaxima,
     cyclonecompositer,
     shifter,
+    shifter!,
     smoothfilter,
     cyclonecompositer_v2,
     cyclonecompositer_v3,

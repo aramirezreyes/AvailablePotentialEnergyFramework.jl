@@ -32,12 +32,12 @@ APE_b2  = mean(b2,dims=(1,2))[1,1,:,:]./N2;
 xBar_KE = mean(U.*U/2 + V.*V/2,dims=(1,2))[1,1,:,:]
 
 #************ APE rate ***************
-xBar_APE_rate = Array{typeof(B[1])}(undef,length(z), length(t))
+xBar_APE_rate = Array{eltype(B),2}(undef,length(z), length(t))
 xBar_APE_rate[:,1:end-1] = (APE_b2[:,2:end] - APE_b2[:,1:end-1])/dt; 
 xBar_APE_rate[:,end] = xBar_APE_rate[:,end-1]
 
 #*************  UdxB2 **************
-b2_ghost= Array{typeof(B[1])}(undef, length(x)+1,length(y)+1, length(z), length(t))
+b2_ghost= Array{typeof(B)}(undef, length(x)+1,length(y)+1, length(z), length(t))
 b2_ghost[1:end-1,1:end-1,:,:] = b2
 
 b2_ghost[end,1:end-1,:,:] = b2[1,:,:,:]
@@ -134,7 +134,7 @@ end
 function getapebudget_old(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t, dx,dy, dz, dt, z_up)
     N2            = reshape(N2,1,1,length(z),length(t)) 
     #***********Empty array generation***********#
-    T             = typeof(B[1])
+    T             = eltype(B)
     lt            = length(t)
     lz            = length(z)
     lx            = length(y)
@@ -251,7 +251,7 @@ function getapebudget_old(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z
 function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t, dx,dy, dz, dt, z_up)
     N2            = reshape(N2,1,1,length(z),length(t)) 
     #***********Empty array generation***********#
-    T             = typeof(B[1])
+    T             = eltype(B)
     lt            = length(t)
     lz            = length(z)
     buf           = similar(U)
@@ -267,59 +267,42 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     xBar_APE_FS   = Array{T}(undef,1,1,lz, lt)
     #*************  APE **************
     @. buf                           = B*B/2
-    mean!(APE_b2,buf);
-    @. APE_b2                        = APE_b2/N2
     @. b2_ghost[1:end-1,1:end-1,:,:] = buf
     @. b2_ghost[end,1:end-1,:,:]     = buf[1,:,:,:]
     @. b2_ghost[1:end-1,end,:,:]     = buf[:,1,:,:]
+    @. buf = buf/N2
+    mean!(APE_b2,buf);
  
-    
     #************ KE ********************
     #KE      = U.*U/2 + V.*V/2
     @. buf  = U*U/2 + V*V/2
     xBar_KE = mean!(xBar_KE,buf)
 
     #************ APE rate ***************
-    
     @.  xBar_APE_rate[:,1:end-1] = (APE_b2[1,1,:,2:end] - APE_b2[1,1,:,1:end-1])/dt; 
     @.  xBar_APE_rate[:,end] = xBar_APE_rate[:,end-1]
     
-    #*************  UdxB2 **************
+    #*************  Advection **************
    
-    @. buf = @views U*(b2_ghost[2:end,1:end-1,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/dx
-
+    @. buf = @views U*(b2_ghost[2:end,1:end-1,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/N2/dx
     mean!(xBar_APE_Ub2,buf)
-
-    @. buf = @views V*(b2_ghost[1:end-1,2:end,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/dy
-
+    @. buf = @views V*(b2_ghost[1:end-1,2:end,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/N2/dy
     mean!(xBar_APE_Vb2,buf)
-
-    @. xBar_APE_Ub2 = xBar_APE_Ub2/N2
-    @. xBar_APE_Vb2 = xBar_APE_Vb2/N2
-    
     ################################# static stability WN2
     #APE_WN2     = W.*B
     @. buf = W*B
     mean!(xBar_APE_WN2,buf)
-    
     # RAD generation
-    @. buf = RAD_b.*B
+    @. buf = RAD_b*B/N2
     mean!(xBar_APE_RAD,buf);  
-    @. xBar_APE_RAD = xBar_APE_RAD/N2
-    
     # Diabatic_other
-    @. buf = Diabatic_other.*B
+    @. buf = Diabatic_other*B/N2
     mean!(xBar_APE_DIA,buf)
-    @. xBar_APE_DIA = xBar_APE_DIA/N2;  
-    
     # Surface fluxes contribution 
-        
     xBar_APE_Fs  = @views mean(B[:,:,1,:].*Fs, dims=(1,2))[1,1,1,:]./N2[1,1,1,:];
-  
     # interpolation 
     k_up              = argmin(abs.(z.-z_up));
     z1                = z[1]:dz:z[k_up];
-    
     int_mass      = zeros(T,lt)
     int_KE        = zeros(T,lt)
     int_APE       = zeros(T,lt)
@@ -339,19 +322,17 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
         xBar_APE_Vb21_itp =  interpolate((z,), xBar_APE_Vb2[1,1,:,time],Gridded(Linear()))
         xBar_KE1_itp      =  interpolate((z,), xBar_KE[1,1,:,time],Gridded(Linear()))
         xBar_APE_rate1_itp    =  interpolate((z,), xBar_APE_rate[:,time],Gridded(Linear()))
-
         @inbounds for zeta in z1
             mass = dz*rho01_itp(zeta)
-
-                int_mass[time]         += mass
-                int_APE[time]          += mass*xBar_APE_b21_itp(zeta) 
-                int_APE_RAD[time]      += mass*xBar_APE_RAD1_itp(zeta) 
-                int_APE_DIA[time]      += mass*xBar_APE_DIA1_itp(zeta) 
-                int_APE_WN2[time]      += mass*xBar_APE_WN21_itp(zeta) 
-                int_APE_Ub2[time]      += mass*xBar_APE_Ub21_itp(zeta) 
-                int_APE_Vb2[time]      += mass*xBar_APE_Vb21_itp(zeta) 
-                int_KE[time]           += mass*xBar_KE1_itp(zeta) 
-                int_APE_rate[time]     += mass*xBar_APE_rate1_itp(zeta) 
+            int_mass[time]         += mass
+            int_APE[time]          += mass*xBar_APE_b21_itp(zeta) 
+            int_APE_RAD[time]      += mass*xBar_APE_RAD1_itp(zeta) 
+            int_APE_DIA[time]      += mass*xBar_APE_DIA1_itp(zeta) 
+            int_APE_WN2[time]      += mass*xBar_APE_WN21_itp(zeta) 
+            int_APE_Ub2[time]      += mass*xBar_APE_Ub21_itp(zeta) 
+            int_APE_Vb2[time]      += mass*xBar_APE_Vb21_itp(zeta) 
+            int_KE[time]           += mass*xBar_KE1_itp(zeta) 
+            int_APE_rate[time]     += mass*xBar_APE_rate1_itp(zeta) 
 
         end
     end
@@ -427,43 +408,37 @@ x,y,z,t the coordinate vectors
 
 
 function buoyancybudget(B, RAD_b, Fs, U,V, W, N2, dx,dy, dz, dt, x,y, z, t)
-#************ Array creation **************#
-Qs      = zeros(typeof(B[1]),length(x),length(y),length(z),length(t))
-#B_ghost = Array{typeof(B[1])}(undef, length(x)+1,length(y)+1, length(z), length(t))
-WN2     = similar(W)
-dBdt    = similar(B)
-UdBdx   = similar(U)
-VdBdy   = similar(U)
-#************ WN2 *****************
+    #************ Array creation **************#
+    #Qs      = zeros(eltype(B),length(x),length(y),length(z),length(t))
+    #B_ghost = Array{typeof(B[1])}(undef, length(x)+1,length(y)+1, length(z), length(t))
+    WN2     = similar(W)
+    dBdt    = similar(B)
+    UdBdx   = similar(U)
+    VdBdy   = similar(U)
+    #************ WN2 *****************
+    
+    WN2  .= reshape(N2,(1,1,size(N2,1),size(N2,2))).*W
+    
+    #*************  Advection **************
+    
+    @. @views UdBdx[1:end-1,:,:,:] .= U[1:end-1,:,:,:]*(B[2:end,:,:,:]-B[1:end-1,:,:,:])/dx
+    @. @views UdBdx[end,:,:,:] = U[end,:,:,:]*(B[1,:,:,:]-B[end,:,:,:])/dx
+    
+    @. @views VdBdy[:,1:end-1,:,:] = V[:,1:end-1,:,:].*(B[:,2:end,:,:]-B[:,1:end-1,:,:])/dy
+    @. @views VdBdy[:,end,:,:] = V[:,end,:,:]*(B[:,1,:,:]-B[:,end,:,:])/dy
 
- WN2  .= reshape(N2,(1,1,size(N2,1),size(N2,2))).*W
-
-#*************  Advection **************
-
-# @. B_ghost[1:end-1,1:end-1,:,:] = B
-# @. B_ghost[end,1:end-1,:,:] = B[1,:,:,:]
-# @. B_ghost[1:end-1,end,:,:] = B[:,1,:,:]
-
-# @. UdBdx = U*(B_ghost[2:end,1:end-1,:,:]-B_ghost[1:end-1,1:end-1,:,:])/dx
-# @. VdBdy = V*(B_ghost[1:end-1,2:end,:,:]-B_ghost[1:end-1,1:end-1,:,:])/dy
-
-
-@. @views UdBdx[1:end-1,:,:,:] .= U[1:end-1,:,:,:]*(B[2:end,:,:,:]-B[1:end-1,:,:,:])/dx
-@. @views UdBdx[end,:,:,:] = U[end,:,:,:]*(B[1,:,:,:]-B[end,:,:,:])/dx
-
-@. @views VdBdy[:,1:end-1,:,:] = V[:,1:end-1,:,:].*(B[:,2:end,:,:]-B[:,1:end-1,:,:])/dy
-@. @views VdBdy[:,end,:,:] = V[:,end,:,:]*(B[:,1,:,:]-B[:,end,:,:])/dy
-
-@. Qs[:,:,1,:] = Fs/dz
+    #@. Qs[:,:,1,:] = Fs/dz
 #************ Time evolution *************#
 
-@. @views dBdt[:,:,:,1:end-1] = (B[:,:,:,2:end] - B[:,:,:,1:end-1])/dt; 
-@. @views dBdt[:,:,:,end]     = dBdt[:,:,:,end-1]/dt
-#*************** Return ********************#
-
-Diabatic_other  = dBdt .+ UdBdx .+ VdBdy .+ WN2 .- RAD_b .- Qs
-
-return dBdt, UdBdx,VdBdy, WN2, Qs, Diabatic_other
+    @. @views dBdt[:,:,:,1:end-1] = (B[:,:,:,2:end] - B[:,:,:,1:end-1])/dt
+    @. @views dBdt[:,:,:,end]     = dBdt[:,:,:,end-1]
+    #*************** Return ********************#
+    
+    Diabatic_other  = dBdt .+ UdBdx .+ VdBdy .+ WN2 .- RAD_b
+    Diabatic_other[:,:,1,:] .= @views  Diabatic_other[:,:,1,:] .+  Fs./dz
+    
+    #return dBdt, UdBdx,VdBdy, WN2, Qs, Diabatic_other
+    return Diabatic_other
 end
 
 

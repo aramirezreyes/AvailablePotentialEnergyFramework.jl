@@ -72,36 +72,7 @@ mutable struct ape_budget
 ape_budget(int_APE,int_KE,int_APE_RAD,int_APE_DIA,int_APE_WN2,int_APE_Ub2,int_APE_Vb2,int_APE_rate,xBar_APE_Fs,int_APE_BL,int_KE_BL,int_APE_RAD_BL,int_APE_DIA_BL,int_APE_WN2_BL,int_APE_Ub2_BL,int_APE_Vb2_BL,int_APE_rate_BL,xBar_APE_Fs_BL,dia_a,rad_a,B_a,dia_ape,rad_ape)=new(int_APE,int_KE,int_APE_RAD,int_APE_DIA,int_APE_WN2,int_APE_Ub2,int_APE_Vb2,int_APE_rate,xBar_APE_Fs,int_APE_BL,int_KE_BL,int_APE_RAD_BL,int_APE_DIA_BL,int_APE_WN2_BL,int_APE_Ub2_BL,int_APE_Vb2_BL,int_APE_rate_BL,xBar_APE_Fs_BL,dia_a,rad_a,B_a,dia_ape,rad_ape)
 end
 
-function cat_ape_budget(a::ape_budget,b::ape_budget)
-    return ape_budget(
-          cat(a.int_APE             ,b.int_APE            ,dims=1),
-          cat(a.int_KE              ,b.int_KE             ,dims=1),
-          cat(a.int_APE_RAD         ,b.int_APE_RAD        ,dims=1),
-          cat(a.int_APE_DIA         ,b.int_APE_DIA        ,dims=1),
-          cat(a.int_APE_WN2         ,b.int_APE_WN2        ,dims=1),
-          cat(a.int_APE_Ub2         ,b.int_APE_Ub2        ,dims=1),
-          cat(a.int_APE_Vb2         ,b.int_APE_Vb2        ,dims=1),
-          cat(a.int_APE_rate        ,b.int_APE_rate       ,dims=1),
-          cat(a.xBar_APE_Fs         ,b.xBar_APE_Fs        ,dims=1),
-          cat(a.int_APE_BL          ,b.int_APE_BL         ,dims=1),
-          cat(a.int_KE_BL           ,b.int_KE_BL          ,dims=1),
-          cat(a.int_APE_RAD_BL      ,b.int_APE_RAD_BL     ,dims=1),
-          cat(a.int_APE_DIA_BL      ,b.int_APE_DIA_BL     ,dims=1),
-          cat(a.int_APE_WN2_BL      ,b.int_APE_WN2_BL     ,dims=1),
-          cat(a.int_APE_Ub2_BL      ,b.int_APE_Ub2_BL     ,dims=1),
-          cat(a.int_APE_Vb2_BL      ,b.int_APE_Vb2_BL     ,dims=1),
-          cat(a.int_APE_rate_BL     ,b.int_APE_rate_BL    ,dims=1),
-          cat(a.xBar_APE_Fs_BL      ,b.xBar_APE_Fs_BL     ,dims=1),
-#           cat(a.res_APE             ,b.res_APE            ,dims=1),
-#           cat(a.FT                  ,b.FT                 ,dims=1),
-#           cat(a.BL                  ,b.BL                 ,dims=1),
-          cat(a.dia_a               ,b.dia_a              ,dims=4),
-          cat(a.rad_a               ,b.rad_a              ,dims=4),
-          cat(a.B_a                 ,b.B_a                ,dims=4),
-          cat(a.dia_ape             ,b.dia_ape            ,dims=4),
-          cat(a.rad_ape             ,b.rad_ape            ,dims=4)
-)
-end
+
                                 
 function kernelt(window_t)
    if !isodd(window_t)

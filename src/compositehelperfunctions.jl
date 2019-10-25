@@ -1,6 +1,6 @@
 import Images: findlocalmaxima
 function smoothfilter(surf_pres_anomaly,treshold=9)
-    surf_pres_median = mapwindow(median!,surf_pres_anomaly,[3,3]);
+    surf_pres_median = mapwindow(median!,surf_pres_anomaly,[21,21]);
     surf_pres_median = surf_pres_median.*(surf_pres_median.>treshold);
     surf_pres_filtered = imfilter(surf_pres_median,Kernel.gaussian(3));
     surf_pres_filtered = surf_pres_filtered.*(surf_pres_filtered.>treshold);
@@ -13,11 +13,11 @@ function shifter(array,time,domain_center,peak)
     end
 end
 
-function shifter!(dest,array,time,domain_center,peak)
+function shifter!(dest,array,domain_center,peak)
     if ndims(array)==3
-      return  circshift(dest,array[:,:,time],[domain_center[1]-peak[1],domain_center[2]-peak[2]]);
+      return  circshift!(dest,array,[domain_center[1]-peak[1],domain_center[2]-peak[2]]);
     elseif ndims(array)==4
-      return  circshift(dest,array[:,:,:,time],[domain_center[1]-peak[1],domain_center[2]-peak[2],0]);
+      return  circshift!(dest,array,[domain_center[1]-peak[1],domain_center[2]-peak[2],0]);
     end
 end
 
@@ -101,7 +101,7 @@ function timemean_nofalseframe(input::Array{T,4}) where {T<:Real}
         copy = zeros(size(input))
         trueframes = 1
         for t in 1:size(input,4)
-            if maximum(input[:,:,:,t]) != 0
+            if maximum(view(input,:,:,:,t)) != 0
                copy[:,:,:,trueframes] = input[:,:,:,t]
                trueframes = trueframes + 1
             end
@@ -113,7 +113,7 @@ function timemean_nofalseframe(input::Array{T,3}) where {T<:Real}
         copy = zeros(size(input))
         trueframes = 1
         for t in 1:size(input,3)
-            if maximum(input[:,:,t]) != 0
+            if maximum(view(input,:,:,t)) != 0
                copy[:,:,trueframes] = input[:,:,t]
                trueframes = trueframes + 1
             end
@@ -121,29 +121,31 @@ function timemean_nofalseframe(input::Array{T,3}) where {T<:Real}
         return mean(copy[:,:,1:trueframes-1],dims=3)
 end
     
-function removefalseframes(input::Array{T,4}) where {T<:Real}
-        copy = zeros(size(input))
+function removefalseframes(input::Array{T,4},peaktimes) where {T<:Real}
+        sizet = length(unique(peaktimes))
+        copy = zeros(T,size(input,1),size(input,2),size(input,3),sizet)
         trueframes = 1
-        for t in 1:size(input,4)
-            if maximum(input[:,:,:,t]) != 0
-               copy[:,:,:,trueframes] = input[:,:,:,t]
+        Threads.@threads for t in 1:size(input,4)
+            if maximum(view(input,:,:,:,t)) != 0
+               @views copy[:,:,:,trueframes] .= input[:,:,:,t]
                trueframes = trueframes + 1
             end
         end
-        return copy[:,:,:,1:trueframes-1]
+        return copy
 end
  
    
-function removefalseframes(input::Array{T,3}) where {T<:Real}
-        copy = zeros(size(input))
+function removefalseframes(input::Array{T,3},peaktimes) where {T<:Real}
+        sizet = length(unique(peaktimes))
+        copy = zeros(T,size(input,1),size(input,2),sizet)
         trueframes = 1
-        for t in 1:size(input,3)
-            if maximum(input[:,:,t]) != 0
-               copy[:,:,trueframes] = input[:,:,t]
+        Threads.@threads for t in 1:size(input,3)
+            if maximum(view(input,:,:,t)) != 0
+               @views copy[:,:,trueframes] .= input[:,:,t]
                trueframes = trueframes + 1
             end
         end
-        return copy[:,:,1:trueframes-1]
+        return copy
 end
 
 
