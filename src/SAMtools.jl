@@ -5,7 +5,8 @@ module SAMtools
 using ImageFiltering,
     Statistics,
     NCDatasets,
-    Interpolations
+    Interpolations,
+    Parameters
 
 include("apehelperfunctions.jl")
 include("compositehelperfunctions.jl")
@@ -50,7 +51,11 @@ export
     epsilon,       
     g,
     #Physics functions
-    compute_N2
+    compute_N2,
+    compute_mse,
+    get_mse_budget,
+    #math functions
+    integrate_vertically
 """
 Data filters:    `filter_array`, `filter_array_2`, `filter_array_time`, `getsmoothdata`, `getsmoothdata_nospace`
 Data structures:  `ape_budget`, `cat_ape_budget`, `cutborders!`, `surf_quantities`, `cyclone_comp_timemean`, `Composite_Cyclone`, `Composite_Cyclone_v2`, `Composite_Cyclone_v3`

@@ -9,7 +9,7 @@ function compute_N2_old(var_Tv,xBar_Tv,z)
         if bb[i][1]>2
             N2[bb[i]] = 0.5 * (N2[bb[i][1]-1,bb[i][2]] + N2[bb[i][1]+1,bb[i][2]]) # If N2 is small, substite by mean of neighbours
         else
-            N2[bb[i]] = N2[bb[i][1]+1,bb[i][2]] 
+            N2[bb[i]] = N2[bb[i][1]+1,bb[i][2]]
         end
     end
 
@@ -33,8 +33,78 @@ function compute_N2(xBar_Tv,z)
         if bb[i]>1
           @views  @. N2[bb[i],cc] = 0.5 * (N2[bb[i]-1,cc] + N2[bb[i]+1,cc]) # If N2 is small, substite by mean of neighbours
         else
-          @views @.  N2[bb[i],cc] = N2[bb[i]+1,cc] 
+          @views @.  N2[bb[i],cc] = N2[bb[i]+1,cc]
         end
     end
     return N2
+end
+
+
+#WIP
+function compute_mse(T,z,qv)
+    sz = size(T)
+    return  dryair.cp*T .+ g*reshape(z,(1,1,sz[3],1)) .+ liquidwater.Lv*qv
+
+end
+
+function get_tendency(field :: AbstractArray{T,4}; dt = error("dt is required for the budget computation")) where T
+    dfield_dt = similar(field)
+    @. dfield_dt[:,:,:,1:end-1] = @views (field[:,:,:,2:end] - field[:,:,:,1:end-1]) / dt
+    @. dfield_dt[:,:,:,end] = dfield_dt[:,:,:,end-1]
+ return dfield_dt
+end
+
+function get_advection_asresidual(tendency,sources...)
+    return reduce(+,sources) .- tendency
+end
+
+# integrate_vertically(field :: AbstractArray{T,4};dz = 1, weight = 1) where {T} = reduce(+,dz*weight.*field,dims=3)
+
+# integrate_vertically(field :: AbstractArray{T,3};dz = 1, weight = 1) where {T} = reduce(+,dz*weight.*field,dims=2)
+
+# integrate_vertically(field :: AbstractArray{T,2};dz = 1, weight = 1) where {T} = reduce(+,dz*weight.*field,dims=2)
+
+# integrate_vertically(field :: AbstractArray{T,1};dz = 1 , weight = 1) where {T} = reduce(+,dz*weight*field)
+
+
+# function integrate_vertically(field :: AbstractArray{T,4}; coord :: AbstractArray{T,1},weight = 1) where T
+#     sz = size(field)
+#     sc = size(coord)
+#     integral = zeros(eltype(field),(sz[1],sz[2],1,sz[4]))
+#     @inbounds for ind in CartesianIndices(field)
+#         if ind[3] != sz[3]
+#             integral[ind[1],ind[2],1,ind[4]] = weight*(coord[ind[3]+1] - coord[ind[3]]) * field[ind]
+#         end
+#     end
+#     return integral
+# end
+
+function integrate_vertically(field :: AbstractArray{T,4}; coord :: AbstractArray{T,1},weight :: AbstractArray{T,1}) where T
+    sz = size(field)
+    sc = size(coord)
+    integral = zeros(eltype(field),(sz[1],sz[2],1,sz[4]))
+    @inbounds for ind in CartesianIndices(field)
+        if ind[3] != sz[3]
+            integral[ind[1],ind[2],1,ind[4]] += weight[ind[3]]*(coord[ind[3]+1] - coord[ind[3]]) * field[ind]
+        end
+    end
+    return integral
+end
+
+
+function integrate_vertically(field :: AbstractArray{T,4}; coord :: AbstractArray{T,1},weight :: AbstractArray{T,4}) where T
+    sz = size(field)
+    sc = size(coord)
+    integral = zeros(eltype(field),(sz[1],sz[2],1,sz[4]))
+    @inbounds for ind in CartesianIndices(field)
+        if ind[3] != sz[3]
+            integral[ind[1],ind[2],1,ind[4]] += weight[ind]*(coord[ind[3]+1] - coord[ind[3]]) * field[ind]
+        end
+    end
+    return integral
+end
+
+
+function compute_virtual_temp(T,QV)
+    return T.*(1 .+ 0.61QV)
 end
