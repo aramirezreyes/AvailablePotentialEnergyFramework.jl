@@ -92,6 +92,12 @@ end
 # end
 
 
+function integrate_horizontally(field :: AbstractArray{T,4}; darea) where T
+    return darea*reduce(+,field)
+
+end
+
+
 function integrate_vertically(field :: AbstractArray{T,4}; coord :: AbstractArray{T,1},weight :: AbstractArray{T,4}) where T
     sz = size(field)
     sc = size(coord)
