@@ -79,17 +79,17 @@ end
 #     return integral
 # end
 
-function integrate_vertically(field :: AbstractArray{T,4}; coord :: AbstractArray{T,1},weight :: AbstractArray{T,1}) where T
-    sz = size(field)
-    sc = size(coord)
-    integral = zeros(eltype(field),(sz[1],sz[2],1,sz[4]))
-    @inbounds for ind in CartesianIndices(field)
-        if ind[3] != sz[3]
-            integral[ind[1],ind[2],1,ind[4]] += weight[ind[3]]*(coord[ind[3]+1] - coord[ind[3]]) * field[ind]
-        end
-    end
-    return integral
-end
+# function integrate_vertically(field :: AbstractArray{T,4}; coord :: AbstractArray{T,1},weight :: AbstractArray{T,1}) where T
+#     sz = size(field)
+#     sc = size(coord)
+#     integral = zeros(eltype(field),(sz[1],sz[2],1,sz[4]))
+#     @inbounds for ind in CartesianIndices(field)
+#         if ind[3] != sz[3]
+#             integral[ind[1],ind[2],1,ind[4]] += weight[ind[3]]*(coord[ind[3]+1] - coord[ind[3]]) * field[ind]
+#         end
+#     end
+#     return integral
+# end
 
 
 function integrate_vertically(field :: AbstractArray{T,4}; coord :: AbstractArray{T,1},weight :: AbstractArray{T,4}) where T
@@ -107,4 +107,111 @@ end
 
 function compute_virtual_temp(T,QV)
     return T.*(1 .+ 0.61QV)
+end
+
+
+function spatial_derivative!(output,field,dx,dim)
+    if dim == 1
+        onex = CartesianIndex((1, ntuple(_->0, ndims(u) - 1)...))
+
+        @inbounds for ind in CartesianIndices(field)
+            if ind[dim] == 1
+                output[ind] = (field[ind+onex] - field[ind])/dx
+            elseif ind[dim] == size(field,dim)
+                output[ind] = (field[ind] - field[ind-onex])/dx
+            else
+                output[ind] = (field[ind+onex] - field[ind-onex])/2dx
+            end
+        end
+    elseif dim == 2
+        oney = CartesianIndex((0,1, ntuple(_->0, ndims(u) - 2)...))
+        @inbounds for ind in CartesianIndices(field)
+            if ind[dim] == 1
+                output[ind] = (field[ind+oney] - field[ind])/dx
+            elseif ind[dim] == size(field,dim)
+                output[ind] = (field[ind] - field[ind-oney])/dx
+            else
+                output[ind] = (field[ind+oney] - field[ind-oney])/2dx
+            end
+        end
+        
+    end
+    return output
+end
+
+function spatial_derivative(field, dx, dim)
+    output = similar(field)
+    return spatial_derivative!(output,field,dx,dim)
+end
+
+function get_vorticity!(output,u,v,dx,dy)
+    ## This implementation assumes 4d input
+    onex = CartesianIndex((1, ntuple(_->0, ndims(u) - 1)...))
+    oney = CartesianIndex((0,1, ntuple(_->0, ndims(u) - 2)...))
+    for ind in CartesianIndices(output)
+        if ind[1] == 1
+            output[ind] = (v[ind+onex] - v[ind])/dx
+            elseif ind[1] == size(v,1)
+            output[ind] = (v[ind] - v[ind-onex])/dx
+        else
+            output[ind] = (v[ind+onex] - v[ind-onex])/2dx
+            end
+    end
+    for ind in CartesianIndices(output)
+        if ind[2] == 1
+            output[ind] -= (u[ind+oney] - u[ind])/dy
+        elseif ind[2] == size(u,2)
+            output[ind] -= (u[ind] - u[ind-oney])/dy
+        else
+            output[ind] -= (u[ind+oney] - u[ind-oney])/2dy
+        end
+    end
+    return output
+end
+
+
+function get_vorticity(u,v,dx,dy)
+    output = similar(u)
+    return get_vorticity!(output,u,v,dx,dy)
+end
+
+function get_okubo_weiss!(output,u,v,dx,dy)
+    onex = CartesianIndex((1, ntuple(_->0, ndims(u) - 1)...))
+    oney = CartesianIndex((0,1, ntuple(_->0, ndims(u) - 2)...))
+    sz = size(u)
+#    dvdx
+    for ind in CartesianIndices(u)
+        ##dudx and dvdx
+        if ind[1] == 1
+            dudx = (u[ind+onex] - u[ind])/dx
+            dvdx = (v[ind+onex] - v[ind])/dx
+        elseif ind[1] == sz[1]
+            dudx = (u[ind] - u[ind-onex])/dx
+            dvdx = (v[ind] - v[ind-onex])/dx
+        else
+            dudx = (u[ind+onex] - u[ind-onex])/2dx
+            dvdx = (v[ind+onex] - v[ind-onex])/2dx
+        end
+
+        #dudy and dvdy
+        if ind[2] == 1
+            dvdy = (v[ind+oney] - v[ind])/dy
+            dudy = (u[ind+oney] - u[ind])/dy
+        elseif ind[2] == sz[2]
+            dvdy = (v[ind] - v[ind-oney])/dy
+            dudy = (u[ind] - u[ind-oney])/dy
+        else
+            dvdy = (v[ind+oney] - v[ind-oney])/2dy
+            dudy = (u[ind+oney] - u[ind-oney])/2dy
+        end
+        output[ind] = dudx*dudx + dvdy*dvdy - 2dudx*dvdy + 2dvdx*dudy -
+            2dvdx*dudy
+    end
+    return output
+end
+
+function get_okubo_weiss(u,v,dx,dy)
+    ow = simila(u)
+    get_okubo_weiss!(ow,u,v,dx,dy)
+    return ow
 end
