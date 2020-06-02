@@ -54,6 +54,14 @@ function get_tendency(field :: AbstractArray{T,4}; dt = error("dt is required fo
  return dfield_dt
 end
 
+
+function get_tendency(field :: AbstractArray{T,1}; dt = error("dt is required for the budget computation")) where T
+    dfield_dt = similar(field)
+    @. dfield_dt[1:end-1] = (field[2:end] - field[1:end-1]) / dt
+    dfield_dt[end] = dfield_dt[end-1]
+ return dfield_dt
+end
+
 function get_advection_asresidual(tendency,sources...)
     return reduce(+,sources) .- tendency
 end
@@ -102,7 +110,7 @@ function integrate_vertically(field :: AbstractArray{T,4}; coord :: AbstractArra
     sz = size(field)
     sc = size(coord)
     integral = zeros(eltype(field),(sz[1],sz[2],1,sz[4]))
-    @inbounds for ind in CartesianIndices(field)
+    for ind in CartesianIndices(field)
         if ind[3] != sz[3]
             integral[ind[1],ind[2],1,ind[4]] += weight[ind]*(coord[ind[3]+1] - coord[ind[3]]) * field[ind]
         end
@@ -176,6 +184,37 @@ function get_vorticity!(output,u,v,dx,dy)
 end
 
 
+function get_divergence!(output,u,v,dx,dy)
+    ## This implementation assumes 4d input
+    onex = CartesianIndex((1, ntuple(_->0, ndims(u) - 1)...))
+    oney = CartesianIndex((0,1, ntuple(_->0, ndims(u) - 2)...))
+    for ind in CartesianIndices(output)
+        if ind[1] == 1
+            output[ind] = (v[ind+onex] - v[ind])/dy
+            elseif ind[1] == size(v,1)
+            output[ind] = (v[ind] - v[ind-onex])/dy
+        else
+            output[ind] = (v[ind+onex] - v[ind-onex])/2dy
+            end
+    end
+    for ind in CartesianIndices(output)
+        if ind[2] == 1
+            output[ind] += (u[ind+oney] - u[ind])/dx
+        elseif ind[2] == size(u,2)
+            output[ind] += (u[ind] - u[ind-oney])/dx
+        else
+            output[ind] += (u[ind+oney] - u[ind-oney])/2dx
+        end
+    end
+    return output
+end
+
+function get_divergence(u,v,dx,dy)
+    output = similar(u)
+    return get_divergence!(output,u,v,dx,dy)
+end
+
+
 function get_vorticity(u,v,dx,dy)
     output = similar(u)
     return get_vorticity!(output,u,v,dx,dy)
@@ -210,14 +249,14 @@ function get_okubo_weiss!(output,u,v,dx,dy)
             dvdy = (v[ind+oney] - v[ind-oney])/2dy
             dudy = (u[ind+oney] - u[ind-oney])/2dy
         end
-        output[ind] = dudx*dudx + dvdy*dvdy - 2dudx*dvdy + 2dvdx*dudy -
+        output[ind] = dudx*dudx + dvdy*dvdy - 2dudx*dvdy + 2dvdx*dudy +
             2dvdx*dudy
     end
     return output
 end
 
 function get_okubo_weiss(u,v,dx,dy)
-    ow = simila(u)
+    ow = similar(u)
     get_okubo_weiss!(ow,u,v,dx,dy)
     return ow
 end

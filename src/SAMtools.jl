@@ -54,6 +54,9 @@ export
     compute_N2,
     compute_mse,
     get_mse_budget,
+    get_vorticity,
+    get_okubo_weiss,
+    get_divergence,
     #math functions
     integrate_vertically
 """

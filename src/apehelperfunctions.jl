@@ -220,15 +220,6 @@ function filter_array!(buf::Array{T,4},array::Array{T,4},smooth_x,smooth_time,po
 #        return filtered
 end    
 
-# function filter_array!(buf::Array{T,4},array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
-#     if position == 2
-#        error("Filter_array: Inner array is not implemented yer")
-#     else
-#         imfilter!(buf,array,kernel4d(smooth_x,smooth_time),"circular")
-#         imfilter!(array,buf,kernel4d_t(smooth_time),"symmetric")
-#     end
-# #        return filtered
-# end 
 
 function filter_array!(buf::Array{T,3},array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
     if position==2

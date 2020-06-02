@@ -25,4 +25,6 @@ liquidwater  = substance(
      cp = 4200 #j/kg/k
 )
 
-
+watervapor = substance(
+    R = 461.52 #j/kg/K
+)
