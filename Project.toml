@@ -18,3 +18,13 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
+
+[compat]
+ImageFiltering = "^0.6.11"
+ImageSegmentation = "^1.4.2"
+ImageView = "^0.10.8"
+Images = "^0.22.2"
+Interpolations = "^0.12.10"
+NCDatasets = "^0.10.2"
+Parameters = "^0.12.1"
+julia ="^1.0"
