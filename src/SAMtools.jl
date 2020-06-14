@@ -14,7 +14,7 @@ include("compositehelperfunctions.jl")
 include("apebudgets.jl")
 include("physicalconstants.jl")
 include("samphysicsfunctions.jl")
-include("arraytools.jl")
+#include("arraytools.jl")
 export
 # Filters
     filter_array!,
