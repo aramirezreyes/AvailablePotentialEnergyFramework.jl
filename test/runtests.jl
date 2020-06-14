@@ -15,7 +15,3 @@ matrixwithcyclones = zeros(Bool,20,20)
 matrixwithcyclones[1:3,1:3] .= true
 matrixwithcyclones[8:11,5:8] .= true
 matrixwithcyclones[17:20,17:20] .= true
-matrixwithcyclones
-
-seeded_region_gr                                                                    
-                                                                        
