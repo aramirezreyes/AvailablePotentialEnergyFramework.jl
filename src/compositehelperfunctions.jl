@@ -1,10 +1,20 @@
 import Images: findlocalmaxima
+
 function smoothfilter(surf_pres_anomaly,treshold=9)
     surf_pres_median = mapwindow(median!,surf_pres_anomaly,[21,21]);
     surf_pres_median = surf_pres_median.*(surf_pres_median.>treshold);
     surf_pres_filtered = imfilter(surf_pres_median,Kernel.gaussian(3));
     surf_pres_filtered = surf_pres_filtered.*(surf_pres_filtered.>treshold);
 end
+
+"""
+    shifter(array,time,domain_center,peak)
+
+Returns an array in which a pressure perturbation center is displaced to the center of the domain using circshift.
+Using it may assume periodic domain.
+Receives and SAM 3D+time or 2D+time array and two tuples, the (x,y) indices of the domain center,
+and the (x,y) indices of the location of the pressure perturbation peak.
+"""
 function shifter(array,time,domain_center,peak)
     if ndims(array)==3
       return  circshift(array[:,:,time],[domain_center[1]-peak[1],domain_center[2]-peak[2]]);
@@ -12,7 +22,14 @@ function shifter(array,time,domain_center,peak)
       return  circshift(array[:,:,:,time],[domain_center[1]-peak[1],domain_center[2]-peak[2],0]);
     end
 end
+"""
+    shifter!(dest,array,time,domain_center,peak)
 
+Stores in `dest` an array in which a pressure perturbation center is displaced to the center of the domain using circshift.
+Using it may assume periodic domain.
+Receives and SAM 3D+time or 2D+time array and two tuples, the (x,y) indices of the domain center,
+and the (x,y) indices of the location of the pressure perturbation peak.
+"""
 function shifter!(dest,array,domain_center,peak)
     if ndims(array)==3
       return  circshift!(dest,array,[domain_center[1]-peak[1],domain_center[2]-peak[2]]);

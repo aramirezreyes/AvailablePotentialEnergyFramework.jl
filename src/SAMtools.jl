@@ -6,13 +6,15 @@ using ImageFiltering,
     Statistics,
     NCDatasets,
     Interpolations,
-    Parameters
+    Parameters,
+    ImageSegmentation
 
 include("apehelperfunctions.jl")
 include("compositehelperfunctions.jl")
 include("apebudgets.jl")
 include("physicalconstants.jl")
 include("samphysicsfunctions.jl")
+include("arraytools.jl")
 export
 # Filters
     filter_array!,
