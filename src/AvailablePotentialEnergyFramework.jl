@@ -1,6 +1,6 @@
 VERSION < v"0.1" && __precompile__()
 
-module SAMtools
+module AvailablePotentialEnergyFramework
 
 using ImageFiltering,
     Statistics,
@@ -13,7 +13,7 @@ include("apehelperfunctions.jl")
 include("compositehelperfunctions.jl")
 include("apebudgets.jl")
 include("physicalconstants.jl")
-include("samphysicsfunctions.jl")
+include("physicsfunctions.jl")
 #include("arraytools.jl")
 export
 # Filters
