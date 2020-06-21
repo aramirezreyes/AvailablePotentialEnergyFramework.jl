@@ -1,10 +1,22 @@
-import Images: findlocalmaxima
+import Images: findlocalminima
+"""
+    findcyclonecenters_aspressureminima(surf_pres_anomaly,detection_threshold)
+Takes a surface pressure anomaly array surf_pres_anomaly[x,y] = surf_pres[x,y] .- mean(surf_pres,dims(1,2))
+a detection threshold for the anomaly, and return an array of tuples (x,y) 
+where each tuple represents the centers of cyclones identified as the minima of the anomaly.
+"""
+function findcyclonecenters_aspressureminima(surf_pres_anomaly,detection_threshold)
+    surf_pres_filtered = smoothfilter(surf_pres_anomaly,detection_threshold);
+    peaks              = findlocalminima(surf_pres_filtered);
+end
+
+
 
 function smoothfilter(surf_pres_anomaly,treshold=9)
     surf_pres_median = mapwindow(median!,surf_pres_anomaly,[21,21]);
-    surf_pres_median = surf_pres_median.*(surf_pres_median.>treshold);
+    surf_pres_median = surf_pres_median.*(surf_pres_median.<treshold);
     surf_pres_filtered = imfilter(surf_pres_median,Kernel.gaussian(3));
-    surf_pres_filtered = surf_pres_filtered.*(surf_pres_filtered.>treshold);
+    surf_pres_filtered = surf_pres_filtered.*(surf_pres_filtered.<treshold);
 end
 
 """
