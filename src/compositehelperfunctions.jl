@@ -63,35 +63,56 @@ function averageallindistance(radiusbin,array :: Array{T,3},mask,center,gridspac
 end 
 
 """
-   azimuthalaverage_allcyclones!(radiusbins,average,buf,buf2,array,segmentedcyclones,cyclonescenters,gridspacing)
+    azimuthalaverage_allcyclones(radius_bins,array :: Array{T,3},segmentedcyclones,cyclonescenters,gridspacing)
 
-Compute the azimuthal average of some quantity around a center. It receives the field to average, called `array`, each cyclone as a SegmentedImage,the centers of the cyclones and the gridspacing.
-It receives 4 arrays to mutate, they are listed below.
-# Arguments
-- `radius :: Array{Float,1}`: contains the list of radius
-- `average :: Array{Float,ndims(array) - 1}` the array to store the averaged quantity
-- `buf :: Array{Float,2}` a buffer to recenter the pressure field so that the cyclone in turn appear at the center of the domain
-- `buf2 :: Array{Float,ndims(array)} ` 
-
+Compute the azimuthal average of some quantity around a center. Repeats the process and averages about all the tropical cyclones detected on the array.
+It receives an array with the radius bins to use,the field to average, called `array`, each cyclone as a SegmentedImage,the centers of the cyclones and the gridspacing.
 """
-function azimuthalaverage_allcyclones!(radiuses,averages,buf1,buf2,array :: Array{T,3},segmentedcyclones,cyclonescenters,gridspacing)  where T
+function  azimuthalaverage_allcyclones(radius_bins,array :: Array{T,3},segmentedcyclones,cyclonescenters,gridspacing) where T
     G, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
     labelsmap = labels_map(segmentedcyclones)
     adjacencymatrix = G.weights
+    average = zeros(size(array,3),length(radius_bins)-1)
+    cyclonecount = 0
     for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
-        if !isinteracting(adjacencymatrix,cyclone)
-            shifter!(buf1,array,size(array).÷2,cyclonescenters[cyclone][1])
-            shifter!(buf2,labelsmap,size(array).÷2,cyclonescenters[cyclone][1])
-            for index in findall((==)(cyclone),buf2)
-                @info index,cyclonescenters[cyclone][1]
-                distfromcenter = distance(index,cyclonescenters[cyclone][1],2000)
-                radiusisatindex = findall((==)(distfromcenter),radiuses)
-                if (length(radiusisatindex) == 0)
-                    push!(radiuses,distfromcenter)
-                end 
-                return nothing
+        if !isinteracting(segmentedcyclones,cyclone)
+            cyclonecount += 1
+            for bin in 1:(length(radius_bins) - 1)
+                average[:,bin] .+= averageallindistance((radius_bins[bin],radius_bins[bin+1]),array,labelsmap.==cyclone,cyclonescenters[cyclone][1],gridspacing)
             end
         end
+    end
+    if !iszero(cyclonecount)
+        return    average./cyclonecount
+    else
+        return average
+    end
+end
+
+"""
+    azimuthalaverage_allcyclones(radius_bins,array :: Array{T,3},segmentedcyclones,cyclonescenters,gridspacing)
+
+Compute the azimuthal average of some quantity around a center. Repeats the process and averages about all the tropical cyclones detected on the array.
+It receives an array with the radius bins to use,the field to average, called `array`, each cyclone as a SegmentedImage,the centers of the cyclones and the gridspacing.
+"""
+function  azimuthalaverage_allcyclones(radius_bins,array :: Array{T,2},segmentedcyclones,cyclonescenters,gridspacing) where T
+    G, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
+    labelsmap = labels_map(segmentedcyclones)
+    adjacencymatrix = G.weights
+    average = zeros(length(radius_bins)-1)
+    cyclonecount = 0
+    for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
+        if !isinteracting(segmentedcyclones,cyclone)
+            cyclonecount += 1
+            for bin in 1:(length(radius_bins) - 1)
+                average[bin] += averageallindistance((radius_bins[bin],radius_bins[bin+1]),array,labelsmap.==cyclone,cyclonescenters[cyclone][1],gridspacing)
+            end
+        end
+    end
+    if !iszero(cyclonecount)
+        return    average./cyclonecount
+    else
+        return average
     end
 end
 
