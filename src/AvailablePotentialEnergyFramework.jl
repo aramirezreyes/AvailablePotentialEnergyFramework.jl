@@ -13,7 +13,8 @@ using ImageFiltering,
     NCDatasets,
     Interpolations,
     Parameters,
-    ImageSegmentation
+    ImageSegmentation,
+    SparseArrays
 
 include("apehelperfunctions.jl")
 include("compositehelperfunctions.jl")

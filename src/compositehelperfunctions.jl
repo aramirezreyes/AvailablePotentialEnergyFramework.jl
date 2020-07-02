@@ -1,13 +1,80 @@
 using Images: findlocalminima
 using ImageSegmentation: SegmentedImage, segment_labels, region_adjacency_graph
-using SparseArrays: SparseMatrixCSC
+using SparseArrays
 
 """
-   azimuthalaverage(buf,array,segmentedcyclones,segmentlabels,gridspacing)
+    distance(x1,x2,gridspacing :: Number)
+
+Compute the cartesian distance between two points given their indices and the gridspacing. It asummes uniform grid.
 
 
 """
-function azimuthalaverage!(buf1,buf2,array,segmentedcyclones,cyclonescenters,gridspacing)
+function distance(x1,x2,gridspacing :: Number,weight=1)
+    return gridspacing*sqrt( (x2[1]-x1[1])^2 + (x2[2]-x1[2])^2 )
+end
+ 
+
+"""
+    isindexindistancebin(binlimits,index,center = (0,0),gridspacing=1) = (binlimits[1] < distance(index,center,gridspacing) <= binlimits[2]) ? true : false
+computes the distance of one index to the origin and returns true if that distance is inside a bin
+"""
+isindexindistancebin(binlimits,index,center,gridspacing=1) = (binlimits[1] < distance(index,center,gridspacing) <= binlimits[2]) ? true : false
+
+"""
+    averageallindistance(radiusbin,array :: Array{T,2},mask,center,gridspacing = 1)
+Create an average of the quantity in array at all the points located between radiusbin[1] and radiusbin[2] from a center.
+The points should be masked by a boolean array. It assumes a uniform gridspacing.
+"""
+function averageallindistance(radiusbin,array :: Array{T,2},mask,center,gridspacing = 1) where T
+    average = 0.0
+    count = 0    
+    @inbounds for index in CartesianIndices(mask)
+        if mask[index] && isindexindistancebin(radiusbin,index,center,gridspacing)
+                count += 1
+                average += array[index]
+        end 
+    end
+    if !iszero(count)
+        return average./count
+    else
+        return average
+    end
+end 
+
+"""
+    averageallindistance(radiusbin,array :: Array{T,3},mask,center,gridspacing = 1)
+Create an average of the quantity in array at all the points located between radiusbin[1] and radiusbin[2] from a center.
+The points should be masked by a boolean array. It assumes a uniform gridspacing.
+"""
+function averageallindistance(radiusbin,array :: Array{T,3},mask,center,gridspacing = 1) where T
+    average = zeros(size(array,3))
+    count = 0    
+    @inbounds for index in CartesianIndices(mask)
+        if mask[index] && isindexindistancebin(radiusbin,index,center,gridspacing)
+            count += 1
+            average .+= array[index,:]
+        end 
+    end
+    if !iszero(count)
+        return    average./count
+    else
+        return average
+    end
+end 
+
+"""
+   azimuthalaverage_allcyclones!(radiusbins,average,buf,buf2,array,segmentedcyclones,cyclonescenters,gridspacing)
+
+Compute the azimuthal average of some quantity around a center. It receives the field to average, called `array`, each cyclone as a SegmentedImage,the centers of the cyclones and the gridspacing.
+It receives 4 arrays to mutate, they are listed below.
+# Arguments
+- `radius :: Array{Float,1}`: contains the list of radius
+- `average :: Array{Float,ndims(array) - 1}` the array to store the averaged quantity
+- `buf :: Array{Float,2}` a buffer to recenter the pressure field so that the cyclone in turn appear at the center of the domain
+- `buf2 :: Array{Float,ndims(array)} ` 
+
+"""
+function azimuthalaverage_allcyclones!(radiuses,averages,buf1,buf2,array :: Array{T,3},segmentedcyclones,cyclonescenters,gridspacing)  where T
     G, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
     labelsmap = labels_map(segmentedcyclones)
     adjacencymatrix = G.weights
@@ -15,7 +82,15 @@ function azimuthalaverage!(buf1,buf2,array,segmentedcyclones,cyclonescenters,gri
         if !isinteracting(adjacencymatrix,cyclone)
             shifter!(buf1,array,size(array).÷2,cyclonescenters[cyclone][1])
             shifter!(buf2,labelsmap,size(array).÷2,cyclonescenters[cyclone][1])
-            @info "Added 1 cyclone"
+            for index in findall((==)(cyclone),buf2)
+                @info index,cyclonescenters[cyclone][1]
+                distfromcenter = distance(index,cyclonescenters[cyclone][1],2000)
+                radiusisatindex = findall((==)(distfromcenter),radiuses)
+                if (length(radiusisatindex) == 0)
+                    push!(radiuses,distfromcenter)
+                end 
+                return nothing
+            end
         end
     end
 end
