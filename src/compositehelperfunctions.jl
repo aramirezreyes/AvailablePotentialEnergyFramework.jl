@@ -96,10 +96,10 @@ Compute the azimuthal average of some quantity around a center. Repeats the proc
 It receives an array with the radius bins to use,the field to average, called `array`, each cyclone as a SegmentedImage,the centers of the cyclones and the gridspacing.
 """
 function  azimuthalaverage_allcyclones(radius_bins,array :: Array{T,2},segmentedcyclones,cyclonescenters,gridspacing) where T
+    average = zeros(length(radius_bins)-1)
     G, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
     labelsmap = labels_map(segmentedcyclones)
     adjacencymatrix = G.weights
-    average = zeros(length(radius_bins)-1)
     cyclonecount = 0
     for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
         if !isinteracting(segmentedcyclones,cyclone)
@@ -179,8 +179,8 @@ Takes a surface pressure anomaly array surf_pres_anomaly[x,y] = surf_pres[x,y] .
 a detection threshold for the anomaly, and return an array of tuples (x,y) 
 where each tuple represents the centers of cyclones identified as the minima of the anomaly.
 """
-function findcyclonecenters_aspressureminima(surf_pres_anomaly,detection_threshold,resolution)
-    surf_pres_filtered = smoothfilter(surf_pres_anomaly,detection_threshold,resolution);
+function findcyclonecenters_aspressureminima(surf_pres_anomaly,detection_threshold,grid_spacing=5000)
+    surf_pres_filtered = smoothfilter(surf_pres_anomaly,detection_threshold,grid_spacing);
     peaks              = findlocalminima(surf_pres_filtered,[1,2],false);
 end
 
@@ -190,12 +190,12 @@ end
 Takes a 2d array and smooths it using a rolling median filter. 
 It then returns the elements of the filtered array whose values are less than the threshold.
 """
-function smoothfilter(surf_pres_anomaly,treshold=9, resolution = 2000)
+function smoothfilter(surf_pres_anomaly,treshold=-9, resolution = 2000)
     windowsize = 30000 ÷ (2*resolution) # Length order of magnitude of the eye
     windowsize % 2 == 0 ? windowsize = windowsize + 1 : windowsize
-    surf_pres_median = mapwindow(median!,surf_pres_anomaly,[windowsize,windowsize]);
+    surf_pres_median = mapwindow(median!,surf_pres_anomaly,[windowsize,windowsize],border="circular");
     surf_pres_median = surf_pres_median.*(surf_pres_median.<treshold);
-    surf_pres_filtered = imfilter(surf_pres_median,Kernel.gaussian(3));
+    surf_pres_filtered = imfilter(surf_pres_median,Kernel.gaussian(3),"circular");
     surf_pres_filtered = surf_pres_filtered.*(surf_pres_filtered.<treshold);
 end
 
