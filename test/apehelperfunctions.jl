@@ -1,4 +1,4 @@
-using SAMtools, ImageFiltering, Test
+using AvailablePotentialEnergyFramework, ImageFiltering, Test
 
 
 @testset "APE helper functions" begin

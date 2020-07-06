@@ -1,4 +1,4 @@
-using SAMtools
+using AvailablePotentialEnergyFramework
 using Test
 
 
@@ -11,7 +11,4 @@ using Test
 # @test integrate_vertically(testmat_2d,weight=testweights_1d) == reshape(10*(1:10)).*reverse((1:10),10,1)
 # @test integrate_vertically(testmat_2d,weight=testweights_2d) == reshape(55*(1:10)).*reverse(1:10),10,1)
 
-matrixwithcyclones = zeros(Bool,20,20)
-matrixwithcyclones[1:3,1:3] .= true
-matrixwithcyclones[8:11,5:8] .= true
-matrixwithcyclones[17:20,17:20] .= true
+include("cyclone_detection.jl")
