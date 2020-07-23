@@ -10,7 +10,7 @@ Compute the cartesian distance between two points given their indices and the gr
 
 """
 function distance(x1,x2,gridspacing :: Number,weight=1)
-    return gridspacing*sqrt( (x2[1]-x1[1])^2 + (x2[2]-x1[2])^2 )
+    return gridspacing*hypot( x2[1]-x1[1], x2[2]-x1[2] )
 end
  
 
@@ -25,11 +25,11 @@ isindexindistancebin(binlimits,index,center,gridspacing=1) = (binlimits[1] < dis
 Create an average of the quantity in array at all the points located between radiusbin[1] and radiusbin[2] from a center.
 The points should be masked by a boolean array. It assumes a uniform gridspacing.
 """
-function averageallindistance(radiusbin,array :: Array{T,2},mask,center,gridspacing = 1) where T
+function averageallindistance(radiusbin,array :: Array{T,2},center,gridspacing = 1) where T
     average = 0.0
     count = 0    
-    @inbounds for index in CartesianIndices(mask)
-        if mask[index] && isindexindistancebin(radiusbin,index,center,gridspacing)
+    @inbounds for index in CartesianIndices(array)
+        if isindexindistancebin(radiusbin,index,center,gridspacing)
                 count += 1
                 average += array[index]
         end 
@@ -46,21 +46,90 @@ end
 Create an average of the quantity in array at all the points located between radiusbin[1] and radiusbin[2] from a center.
 The points should be masked by a boolean array. It assumes a uniform gridspacing.
 """
-function averageallindistance(radiusbin,array :: Array{T,3},mask,center,gridspacing = 1) where T
+function averageallindistance(radiusbin,array :: Array{T,3},center,gridspacing = 1) where T
     average = zeros(size(array,3))
-    count = 0    
-    @inbounds for index in CartesianIndices(mask)
-        if mask[index] && isindexindistancebin(radiusbin,index,center,gridspacing)
+    sx,sy,sz = size(array)
+    count = 0
+    @inbounds for index in CartesianIndices((1:sx,1:sy))
+        if isindexindistancebin(radiusbin,index,center,gridspacing)
             count += 1
-            average .+= array[index,:]
-        end 
+            @views average[:] .+= array[index,:]
+        end
     end
     if !iszero(count)
-        return    average./count
+        return average./count
     else
         return average
     end
-end 
+end
+
+"""
+    averageallindistance!(radiusbin,array :: Array{T,3},mask,center,gridspacing = 1)
+Create an average of the quantity in array at all the points located between radiusbin[1] and radiusbin[2] from a center.
+The points should be masked by a boolean array. It assumes a uniform gridspacing.
+"""
+function averageallindistance!(average,radiusbin,array :: Array{T,3},center,gridspacing = 1) where T
+    sx,sy,sz = size(array)
+    count = 0
+    @inbounds for index in CartesianIndices((1:sx,1:sy))
+        if isindexindistancebin(radiusbin,index,center,gridspacing)
+            count += 1
+            @views average[:] .+= array[index,:]
+        end
+    end
+    if !iszero(count)
+        return average./count
+    else
+        return average
+    end
+end
+
+
+"""
+
+"""
+function velocity_topolar(u,v,index,center)
+    pos = index .- center
+    theta1 = atan(v,u)
+    theta2 = atan(pos[2],pos[1])
+    return hypot(u,v) * cos(theta1 + theta2), hypot(u,v)*sin(theta1 + theta2)
+end
+
+"""
+    add_allcyclones(buf :: Array{T,2},array :: Array{T,2},radius_bins,array :: Array{T,3},segmentedcyclones,cyclonescenters,gridspacing)
+
+Compute the azimuthal average of some quantity around a center. Repeats the process and averages about all the tropical cyclones detected on the array.
+It receives an array with the radius bins to use,the field to average, called `array`, each cyclone as a SegmentedImage,the centers of the cyclones and the gridspacing.
+"""
+function add_allcyclones!(addition,buf,array,segmentedcyclones,cyclonescenters,maskcyclones = true) where T
+    if !(size(addition) == size(buf) == size(array))
+        DimensionMismatch("Addition, buffer and array must all have the same dimensions")
+    end
+    center = size(array)[1:2] .÷ 2
+    if maskcyclones
+        G, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
+        labelsmap = labels_map(segmentedcyclones)
+        cyclonecount = 0
+        for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
+            if !isinteracting(segmentedcyclones,cyclone)
+                cyclonecount += 1
+                addition .+=  shifter!(buf,array.*(labelsmap .== cyclone),center,cyclonescenters[cyclone][1])
+            end
+        end
+    else
+        G, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
+        cyclonecount = 0
+        for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
+            if !isinteracting(segmentedcyclones,cyclone)           
+                cyclonecount += 1
+                addition .+=  shifter!(buf,array,center,cyclonescenters[cyclone][1])
+            end
+        end
+    end
+    return cyclonecount
+
+end
+
 
 """
     azimuthalaverage_allcyclones(radius_bins,array :: Array{T,3},segmentedcyclones,cyclonescenters,gridspacing)
@@ -141,6 +210,10 @@ function detect_cyclones(surface_pressure,pressure_threshold,resolution)
     neighbourhood_gen(arraysize) = point -> AvailablePotentialEnergyFramework.neighbours_2d(arraysize,point)
     pres_anomaly = surface_pressure .- mean(surface_pressure,dims=(1,2))
     centers_and_labels = findcyclonecenters_aspressureminima(pres_anomaly,pressure_threshold,resolution)
+    #@info centers_and_labels
+    if length(centers_and_labels) == 0
+        return (nothing,nothing)
+    end
     centers_and_labels = [(centers_and_labels[i],i) for i in 1:length(centers_and_labels)]
     mask = pres_anomaly .<= pressure_threshold
     push!(centers_and_labels,(findfirst(!,mask),1000))
@@ -200,18 +273,18 @@ function smoothfilter(surf_pres_anomaly,treshold=-9, resolution = 2000)
 end
 
 """
-    shifter(array,time,domain_center,peak)
+    shifter(array,domain_center,peak)
 
 Returns an array in which a pressure perturbation center is displaced to the center of the domain using circshift.
 Using it may assume periodic domain.
 Receives and SAM 3D+time or 2D+time array and two tuples, the (x,y) indices of the domain center,
 and the (x,y) indices of the location of the pressure perturbation peak.
 """
-function shifter(array,time,domain_center,peak)
-    if ndims(array)==3
-      return  circshift(array[:,:,time],[domain_center[1]-peak[1],domain_center[2]-peak[2]]);
-    elseif ndims(array)==4
-      return  circshift(array[:,:,:,time],[domain_center[1]-peak[1],domain_center[2]-peak[2],0]);
+function shifter(array,domain_center,peak)
+    if ndims(array)==2
+      return  circshift(array[:,:],[domain_center[1]-peak[1],domain_center[2]-peak[2]]);
+    elseif ndims(array)==3
+      return  circshift(array[:,:,:],[domain_center[1]-peak[1],domain_center[2]-peak[2],0]);
     end
 end
 """
