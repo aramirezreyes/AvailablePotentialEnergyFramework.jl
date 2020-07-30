@@ -40,7 +40,7 @@ function cutborders!(array::Array{T,1},smooth_time,position) where T <: Real
 
 end
 
-mutable struct ape_budget
+struct ape_budget
     int_APE           
     int_KE            
     int_APE_RAD       
@@ -50,26 +50,14 @@ mutable struct ape_budget
     int_APE_Vb2       
     int_APE_rate      
     xBar_APE_Fs       
-    int_APE_BL        
-    int_KE_BL         
-    int_APE_RAD_BL    
-    int_APE_DIA_BL    
-    int_APE_WN2_BL    
-    int_APE_Ub2_BL    
-    int_APE_Vb2_BL    
-    int_APE_rate_BL   
-    xBar_APE_Fs_BL    
-#    res_APE           
-#    FT                
-#    BL                
-    dia_a             
-    rad_a             
-    B_a               
-    dia_ape           
-    rad_ape           
-    ape_budget() = new()
-    
-ape_budget(int_APE,int_KE,int_APE_RAD,int_APE_DIA,int_APE_WN2,int_APE_Ub2,int_APE_Vb2,int_APE_rate,xBar_APE_Fs,int_APE_BL,int_KE_BL,int_APE_RAD_BL,int_APE_DIA_BL,int_APE_WN2_BL,int_APE_Ub2_BL,int_APE_Vb2_BL,int_APE_rate_BL,xBar_APE_Fs_BL,dia_a,rad_a,B_a,dia_ape,rad_ape)=new(int_APE,int_KE,int_APE_RAD,int_APE_DIA,int_APE_WN2,int_APE_Ub2,int_APE_Vb2,int_APE_rate,xBar_APE_Fs,int_APE_BL,int_KE_BL,int_APE_RAD_BL,int_APE_DIA_BL,int_APE_WN2_BL,int_APE_Ub2_BL,int_APE_Vb2_BL,int_APE_rate_BL,xBar_APE_Fs_BL,dia_a,rad_a,B_a,dia_ape,rad_ape)
+
+
+#    dia_a             
+#    rad_a             
+#    B_a               
+#    dia_ape           
+#    rad_ape           
+
 end
 
 
