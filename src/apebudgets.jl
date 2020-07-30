@@ -435,7 +435,7 @@ function buoyancybudget(B, RAD_b, Fs, U,V, W, N2, dx,dy, dz, dt, x,y, z, t)
     #*************** Return ********************#
     
     Diabatic_other  = dBdt .+ UdBdx .+ VdBdy .+ WN2 .- RAD_b
-    Diabatic_other[:,:,1,:] .= @views  Diabatic_other[:,:,1,:] .+  Fs./dz
+    Diabatic_other[:,:,1,:] .= @views  Diabatic_other[:,:,1,:] .-  Fs./dz
     
     #return dBdt, UdBdx,VdBdy, WN2, Qs, Diabatic_other
     return Diabatic_other
