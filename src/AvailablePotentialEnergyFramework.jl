@@ -21,6 +21,7 @@ include("compositehelperfunctions.jl")
 include("apebudgets.jl")
 include("physicalconstants.jl")
 include("physicsfunctions.jl")
+include("useful_diagnostics.jl")
 #include("arraytools.jl")
 export
 # Filters
@@ -67,6 +68,7 @@ export
     get_okubo_weiss,
     get_divergence,
     #math functions
-    integrate_vertically
+    integrate_vertically,
+    average_precipitation_per_pw_bin
     
 end
