@@ -260,3 +260,5 @@ function get_okubo_weiss(u,v,dx,dy)
     get_okubo_weiss!(ow,u,v,dx,dy)
     return ow
 end
+
+
