@@ -54,6 +54,9 @@ export
     removefalseframes,
     getapebudget,
     buoyancybudget,
+    add_allcyclones!,
+    averageallindistance,
+    detect_cyclones,
     ##Constants
     R,             
     heat_capacity,
