@@ -305,28 +305,6 @@ function shifter!(dest,array,domain_center,peak)
 #    end
 end
 
-# function smooth_time_nofalseframe(input::Array{T,3}) where {T<:Real}
-#         copy = zeros(size(input))
-#         trueframe = 1
-#         for t in 1:size(input,3)
-#             if maximum(input[:,:,t]) !== 0
-#                copy[:,:,trueframe] = input[:,:,t]
-#                trueframe = trueframe + 1
-#             end
-#         end
-#         return smooth_array(copy[:,:,1:trueframe])
-# end
-# function smooth_time_nofalseframe(input::Array{T,4}) where {T<:Real}
-#         copy = zeros(size(input))
-#         trueframe = 1
-#         for t in 1:size(input,4)
-#             if maximum(input[:,:,:,t]) !== 0
-#                copy[:,:,:,trueframe] = input[:,:,:,t]
-#                trueframe = trueframe + 1
-#             end
-#         end
-#         return smooth_array(copy[:,:,:,1:trueframe])
-# end
 """
     timemean_nofalseframe(input)
 
