@@ -252,9 +252,12 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     N2            = reshape(N2,1,1,length(z),length(t)) 
     #***********Empty array generation***********#
     T             = eltype(B)
+    lx            = length(x)
+    ly            = length(y)
     lt            = length(t)
     lz            = length(z)
     buf           = similar(U)
+    buf_2d        = similar(Fs)
     xBar_KE       = Array{T}(undef,1,1,lz, lt)
     APE_b2        = Array{T}(undef,1,1,lz, lt)
     xBar_APE_rate = Array{T}(undef,lz, lt)
@@ -264,15 +267,14 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     xBar_APE_WN2  = Array{T}(undef,1,1,lz, lt)
     xBar_APE_RAD  = Array{T}(undef,1,1,lz, lt)
     xBar_APE_DIA  = Array{T}(undef,1,1,lz, lt)
-    xBar_APE_FS   = Array{T}(undef,1,1,lz, lt)
+    xBar_APE_Fs   = Array{T}(undef,1,1,lt)
     #*************  APE **************
     @. buf                           = B*B/2
     @. b2_ghost[1:end-1,1:end-1,:,:] = buf
     @. b2_ghost[end,1:end-1,:,:]     = buf[1,:,:,:]
     @. b2_ghost[1:end-1,end,:,:]     = buf[:,1,:,:]
-    @. buf = buf/N2
-    mean!(APE_b2,buf);
- 
+    mean!(APE_b2,buf./N2);
+
     #************ KE ********************
     #KE      = U.*U/2 + V.*V/2
     @. buf  = U*U/2 + V*V/2
@@ -293,13 +295,24 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     @. buf = W*B
     mean!(xBar_APE_WN2,buf)
     # RAD generation
+
     @. buf = RAD_b*B/N2
     mean!(xBar_APE_RAD,buf);  
     # Diabatic_other
     @. buf = Diabatic_other*B/N2
     mean!(xBar_APE_DIA,buf)
-    # Surface fluxes contribution 
-    xBar_APE_Fs  = @views mean(B[:,:,1,:].*Fs, dims=(1,2))[1,1,1,:]./N2[1,1,1,:];
+    # Surface fluxes contribution
+    @info "Sizes: " size(B) size(N2) size(Fs) 
+    @info size(xBar_APE_Fs)
+    @inbounds for xind in 1:lx
+                for yind in 1:ly
+                    for tind in 1:lt
+                        buf_2d[xind,yind,tind] = B[xind,yind,1,tind]*Fs[xind,yind,tind]/N2[1,1,1,lt]
+                    end
+                end
+            end 
+    mean!(xBar_APE_Fs,buf_2d)
+    xBar_APE_Fs = dropdims(xBar_APE_Fs, dims=(1,2))
     # interpolation 
     k_up              = argmin(abs.(z.-z_up));
     z1                = z[1]:dz:z[k_up];
@@ -421,10 +434,10 @@ function buoyancybudget(B, RAD_b, Fs, U,V, W, N2, dx,dy, dz, dt, x,y, z, t)
     
     #*************  Advection **************
     
-    @. @views UdBdx[1:end-1,:,:,:] .= U[1:end-1,:,:,:]*(B[2:end,:,:,:]-B[1:end-1,:,:,:])/dx
+    @. @views UdBdx[1:end-1,:,:,:] = U[1:end-1,:,:,:]*(B[2:end,:,:,:]-B[1:end-1,:,:,:])/dx
     @. @views UdBdx[end,:,:,:] = U[end,:,:,:]*(B[1,:,:,:]-B[end,:,:,:])/dx
     
-    @. @views VdBdy[:,1:end-1,:,:] = V[:,1:end-1,:,:].*(B[:,2:end,:,:]-B[:,1:end-1,:,:])/dy
+    @. @views VdBdy[:,1:end-1,:,:] = V[:,1:end-1,:,:]*(B[:,2:end,:,:]-B[:,1:end-1,:,:])/dy
     @. @views VdBdy[:,end,:,:] = V[:,end,:,:]*(B[:,1,:,:]-B[:,end,:,:])/dy
 
     #@. Qs[:,:,1,:] = Fs/dz
@@ -435,11 +448,13 @@ function buoyancybudget(B, RAD_b, Fs, U,V, W, N2, dx,dy, dz, dt, x,y, z, t)
     #*************** Return ********************#
     
     Diabatic_other  = dBdt .+ UdBdx .+ VdBdy .+ WN2 .- RAD_b
-    Diabatic_other[:,:,1,:] .= @views  Diabatic_other[:,:,1,:] .-  Fs./dz
+    Diabatic_other[:,:,1,:] .= @views  Diabatic_other[:,:,1,:] -  Fs/dz
     
-    #return dBdt, UdBdx,VdBdy, WN2, Qs, Diabatic_other
-    return Diabatic_other
+    return dBdt, UdBdx,VdBdy, WN2, Fs/dz, Diabatic_other
+    #return Diabatic_other
 end
+
+
 
 
 
