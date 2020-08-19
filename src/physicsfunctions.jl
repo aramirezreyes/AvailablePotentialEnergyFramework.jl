@@ -26,7 +26,7 @@ function compute_N2(xBar_Tv,z)
     @views  N2[1:end-1,:]  .= (xBar_Tv[1,1,2:end,:].-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1])
     @views  N2[end,:]      .= N2[end-1,:]
     @views  @. N2  = g * (N2 + g/heat_capacity)/xBar_Tv[1,1,:,:]  # Why is this using virtual and not potential, why g/cp check
-        bb1 = as_ints(findall((N2) .< 5e-5))
+        bb1 = as_ints(findall((N2) .< 1e-6))
         bb = bb1[1,:]
         cc = bb1[2,:]
         @inbounds for i in 1:length(bb)
