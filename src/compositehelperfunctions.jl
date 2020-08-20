@@ -1,7 +1,3 @@
-using Images: findlocalminima
-using ImageSegmentation: SegmentedImage, segment_labels, region_adjacency_graph
-using SparseArrays
-
 """
     distance(x1,x2,gridspacing :: Number)
 

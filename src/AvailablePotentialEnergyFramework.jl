@@ -8,13 +8,17 @@ Methods:    `cyclonecompositer`, `shifter`, `smoothfilter`, `cyclonecompositer_v
 """
 module AvailablePotentialEnergyFramework
 
-using ImageFiltering,
-    Statistics,
-    NCDatasets,
-    Interpolations,
-    Parameters,
-    ImageSegmentation,
-    SparseArrays
+
+using DataStructures: OrderedDict
+using ImageFiltering: imfilter, imfilter!, centered, kernelfactors
+using Images: findlocalminima
+using ImageSegmentation: SegmentedImage, segment_labels, region_adjacency_graph
+using Interpolations: LinearInterpolation, interpolate, Gridded, Linear
+using NCDatasets: Dataset, variable
+using SparseArrays: SparseMatrixCSC
+using Statistics: mean
+
+
 
 include("apehelperfunctions.jl")
 include("compositehelperfunctions.jl")
