@@ -184,7 +184,7 @@ This function calls under the hood the imfilter function of Images.jl
  The first argument must be a buffer of the same size of array.
  
  """
- function filter_array(array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
+ function filter_array(array::Array{T,4},smooth_x,smooth_time,position = 1) where T <: Real
      if position == 2
         error("Filter_array: Inner array is not implemented yet")
      else
@@ -205,7 +205,7 @@ This function calls under the hood the imfilter function of Images.jl
  The first argument must be a buffer of the same size of array.
  
  """
- function filter_array(array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
+ function filter_array(array::Array{T,3},smooth_x,smooth_time,position = 1) where T <: Real
      if position==2
         error("Filter_array: Inner array is not implemented yet")
      else
