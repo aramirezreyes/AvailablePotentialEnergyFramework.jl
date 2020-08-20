@@ -22,7 +22,9 @@ include("apebudgets.jl")
 include("physicalconstants.jl")
 include("physicsfunctions.jl")
 include("useful_diagnostics.jl")
-#include("arraytools.jl")
+include("ape_computation_from_julia_output.jl") #testing purposes
+include("arrayfiltering.jl")
+include("datamanagement.jl")
 export
 # Filters
     filter_array!,
@@ -32,26 +34,14 @@ export
     getsmoothdata!,
     getsmoothdata_nospace,
     #Data structures
-    ape_budget,
     cat_ape_budget,
     cutborders!,
-    surf_quantities,
-    cyclone_comp_timemean,
-    Composite_Cyclone,
-    Composite_Cyclone_v2,
-    Composite_Cyclone_v3,
     #Methods
     findlocalmaxima,
     cyclonecompositer,
     shifter,
     shifter!,
     smoothfilter,
-    cyclonecompositer_v2,
-    cyclonecompositer_v3,
-    cyclonecompositer_v3_partial_60d,
-    cyclonecompositer_v4_partial,
-    timemean_nofalseframe,
-    removefalseframes,
     getapebudget,
     buoyancybudget,
     add_allcyclones!,
@@ -72,6 +62,8 @@ export
     get_divergence,
     #math functions
     integrate_vertically,
-    average_precipitation_per_pw_bin
+    average_precipitation_per_pw_bin,
+    #Files and datamanagement
+    smooth_vars_and_write_to_netcdf!
     
 end

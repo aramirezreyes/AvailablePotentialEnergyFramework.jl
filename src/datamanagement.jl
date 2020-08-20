@@ -1,24 +1,30 @@
-cd("/Users/arreyes/Documents/Research/developement/testNetCDF/")
-file = "timeSlab_2d.nc"
-var = "PW"
-ds = NCDatasets.Dataset(file)
-units = ds[var].attrib["units"]
-x                   = ds3d["x"].var[:]
-y                   = ds3d["y"].var[:]
-z                   = ds3d["z"].var[:]
-t                   = ds3d["time"].var[iterator_time_3d]
+using NCDatasets: Dataset
+using DataStructures: OrderedDict
 
-#create struct with data::AxisArray
-#    and with units
+function smooth_vars_and_write_to_netcdf!(output_file,input_file,vars_to_smooth,window_h,window_t)
 
-
-function getvar(ds::Dataset,var::String,portion::tuple=(1))
-    
-    return ds[var].var[:]    
+    ds_orig = Dataset(input_file)
+    ds_new = Dataset(output_file,"c", attrib = OrderedDict(
+        "history"                   => "Filtered data from file: input_file, using $window_h points in the space dimensions and $window_t points in the time dimension"
+    ))
+    # Dimensions
+    for (dim,dim_size) in ds_orig.dim
+        ds_new.dim[dim] = dim_size # unlimited dimension
+        v = ds_orig[dim]
+        create_var = defVar(ds_new,dim, eltype(v.var), dimnames(v),attrib = v.var.attrib)
+        create_var[:] = v[:]
+    end
+    # Declare variables
+    for current_var in vars_to_smooth
+        v = ds_orig[current_var]
+        create_var = defVar(ds_new,current_var, eltype(v.var), dimnames(v),attrib = v.var.attrib)
+        create_var[:] = filter_array(v[:],window_h,window_t)
+    end
+    close(ds_new)
+    close(ds_orig)
 end
 
 
-function getunits(ds::Dataset,var::String)
-    return ds[var].attrib["units"]    
-end
+
+
 
