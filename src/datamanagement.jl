@@ -6,10 +6,12 @@ function smooth_vars_and_write_to_netcdf!(output_file,input_file,vars_to_smooth,
 
     ds_orig = Dataset(input_file)
     ds_new = Dataset(output_file,"c", attrib = OrderedDict(
-        "history"                   => "Filtered data from file: input_file, using $window_h points in the space dimensions and $window_t points in the time dimension"
+        "history"                   => "Filtered data from file: $input_file, using $window_h points in the space dimensions and $window_t points in the time dimension"
     ))
     # Dimensions
     for (dim,dim_size) in ds_orig.dim
+        @info "Writing $dim coordinate in netcdf file"
+        flush(stdout)
         ds_new.dim[dim] = dim_size # unlimited dimension
         v = ds_orig[dim]
         create_var = defVar(ds_new,dim, eltype(v.var), dimnames(v),attrib = v.var.attrib)
@@ -17,9 +19,13 @@ function smooth_vars_and_write_to_netcdf!(output_file,input_file,vars_to_smooth,
     end
     # Declare variables
     for current_var in vars_to_smooth
+        @info "Processing $current_var"
+        flush(stdout)
         v = ds_orig[current_var]
         create_var = defVar(ds_new,current_var, eltype(v.var), dimnames(v),attrib = v.var.attrib)
         create_var[:] = filter_array(v[:],window_h,window_t)
+        @info "Finished processing $current_var"
+        flush(stdout)
     end
     close(ds_new)
     close(ds_orig)
