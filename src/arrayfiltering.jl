@@ -99,14 +99,14 @@ Create a kernel to perform a moving average filtering of a 3-d array along the d
      ###Filtering in space
          for t in 1:size(array,4)
              for z in 1:size(array,3)
-                 filtered[:,:,z,t] = imfilter(array[:,:,z,t], kernel_2d(smooth_x),"circular")
+                 @views filtered[:,:,z,t] = imfilter(array[:,:,z,t], kernel_2d(smooth_x),"circular")
              end
          end
      ### filtering in time
          for z in 1:size(array,3)
              for y in 1:size(array,2)
                  for x in 1:size(array,1)
-                     array[x,y,z,:] = imfilter(filtered[x,y,z,:], kernel_1d(smooth_time),"symmetric")
+                    @views array[x,y,z,:] = imfilter(filtered[x,y,z,:], kernel_1d(smooth_time),"symmetric")
                  end
              end
          end
