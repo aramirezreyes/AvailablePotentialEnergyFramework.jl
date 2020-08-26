@@ -186,13 +186,20 @@ This function calls under the hood the imfilter function of Images.jl
  """
  function filter_array(array::Array{T,4},smooth_x,smooth_time,position = 1) where T <: Real
      if position == 2
-        error("Filter_array: Inner array is not implemented yet")
+        asize = size(array)
+        tail_size = (asize[4]-1)÷2
+        buf1 = Array{T,4}(undef,asize[1],asize[2],asize[3],asize[4] - 2*tail_size)
+        buf2 = Array{T,4}(undef,asize[1],asize[2],asize[3],asize[4] - 2*tail_size)
+        buf_axes = axes(buf1)
+        imfilter!(OffsetArray(buf1,buf_axes[1],buf_axes[2],buf_axes[3],buf_axes[4].+tail_size),array,(kernel_4d_t(smooth_time,T)[3],),Inner())
+        imfilter!(buf2,buf1, kernel_4d(smooth_x,smooth_time,T)[1:2],"circular")
      else
-         buf = similar(array)
-         imfilter!(buf,array,kernel_4d(smooth_x,smooth_time,T)[1:2],"circular")
-         imfilter!(array,buf,(kernel_4d_t(smooth_time,T)[4],),"symmetric")
+         buf1 = similar(array)
+         buf2 = similar(array)
+         imfilter!(buf1,array,kernel_4d(smooth_x,smooth_time,T)[1:2],"circular")
+         imfilter!(buf2,buf1,(kernel_4d_t(smooth_time,T)[4],),"symmetric")
      end
-         return array
+         return buf2
  end    
  
  """
@@ -205,15 +212,26 @@ This function calls under the hood the imfilter function of Images.jl
  The first argument must be a buffer of the same size of array.
  
  """
- function filter_array(array::Array{T,3},smooth_x,smooth_time,position = 1) where T <: Real
-     if position==2
-        error("Filter_array: Inner array is not implemented yet")
+function filter_array(array::Array{T,3},smooth_x,smooth_time,position = 1) where T <: Real
+    if !isodd(smooth_time)
+         window_t += 1
+    end
+    if position==2
+        asize = size(array)
+        tail_size = (asize[3]-1)÷2
+        buf1 = Array{T,3}(undef,asize[1],asize[2],asize[3] - 2*tail_size)
+        buf2 = Array{T,3}(undef,asize[1],asize[2],asize[3] - 2*tail_size)
+        buf_axes = axes(buf1)
+        imfilter!(OffsetArray(buf1,buf_axes[1],buf_axes[2],buf_axes[3].+tail_size),array,(kernel_3d_t(smooth_time,T)[3],),Inner())
+        imfilter!(buf2,buf1, kernel_3d(smooth_x,smooth_time,T)[1:2],"circular")
+
      else
-         buf = similar(array)
-         imfilter!(buf,array, kernel_3d(smooth_x,smooth_time,T)[1:2],"circular")
-         imfilter!(array,buf,(kernel_3d_t(smooth_time,T)[3],),"symmetric")
+        buf1 = similar(array)
+        buf2 = similar(array)
+        imfilter!(buf1,array, kernel_3d(smooth_x,smooth_time,T)[1:2],"circular")
+        imfilter!(buf2,buf1,(kernel_3d_t(smooth_time,T)[3],),"symmetric")
      end
-     return array
+     return buf2
  end
  
  """
