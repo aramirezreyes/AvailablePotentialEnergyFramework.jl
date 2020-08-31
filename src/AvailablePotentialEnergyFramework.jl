@@ -1,4 +1,4 @@
-VERSION < v"0.1" && __precompile__()
+VERSION < v"0.1" 
 
 """
 Data filters:    `filter_array`, `filter_array_2`, `filter_array_time`, `getsmoothdata`, `getsmoothdata_nospace`
