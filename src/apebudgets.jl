@@ -457,6 +457,63 @@ end
 
 
 
+function get_diabatic_as_residual_buoyancy(B, RAD_b, Fs, U,V, W, N2, dx,dy, dz, dt, x,y, z, t)
+    #************ Array creation **************#
+    #Qs      = zeros(eltype(B),length(x),length(y),length(z),length(t))
+    #B_ghost = Array{typeof(B[1])}(undef, length(x)+1,length(y)+1, length(z), length(t))
+    Diabatic_other = similar(B)
+    onex = CartesianIndex((1,0,0,0))
+    oney = CartesianIndex((0,1,0,0))
+    onet = CartesianIndex((0,0,0,1))
+
+    sx,sy,sz,st = size(Diabatic_other)
+    
+    neighborx(indx,sx) = mod1(indx+1,sx)
+    
+    
+#    for ind in CartesianIndices((1:(sx - 1), 2:(sy - 1), 1:sz, 2:(st-1)))
+    @inbounds  for it in 1:(st - 1), iz in 1:sz, iy in 1:sy, ix in 1:sx 
+            ind = CartesianIndex((ix,iy,iz,it))
+            Diabatic_other[ind] = (B[ind+onet] - B[ind])/dt + U[ind]*(B[neighborx(ix,sx),iy,iz,it] -
+                B[ind])/dx + V[ind]*(B[ix,neighborx(iy,sy),iz,it] - V[ind]*B[ind])/dy +
+                W[ind]*N2[iz,it] - RAD_b[ind]
+        end
+
+
+# #    for ind in CartesianIndices((sx,1:(sy - 1),1:sz,1:(st - 1)))
+#      for it in 1:(st - 1), iz in 1:sz, iy in 1:(sy - 1), ix in sx:sx
+#         ind = CartesianIndex((ix,iy,iz,it))
+#         Diabatic_other[ind] = B[ind+onet]/dt - B[ind]/dt + U[ind]*B[1,iy,iz,it]/dx -
+#             U[ind]*B[ind]/dx + V[ind]*B[ind+oney]/dy - V[ind]*B[ind]/dy +
+#             W[ind]*N2[iz,it] - RAD_b[ind]
+#     end
+
+#     #   for ind in CartesianIndices((1:sx,sy,sz,1:st))
+#     for it in 1:(st - 1), iz in 1:sz, iy in sy:sy, ix in 1:(sx - 1)
+#         ind = CartesianIndex((ix,iy,iz,it))
+#         Diabatic_other[ind] =  B[ind+onet]/dt - B[ix,1,iz,it]/dt + U[ind]*B[ind + onex]/dx -
+#             U[ind]*B[ind]/dx + V[ind]*B[ix,1,iz,it]/dy - V[ind]*B[ind]/dy +
+#             W[ind]*N2[iz,it] - RAD_b[ind]
+#     end
+
+
+#    for it in st:st, iz in 1:sz, iy in 1:(sy - 1), ix in 1:(sx - 1)
+    @inbounds for ind in CartesianIndices((1:sx,1:sy,1:sz,st:st))
+        Diabatic_other[ind] = Diabatic_other[ind-onet]
+    end
+
+    
+    @inbounds for it in 1:st, iy in 1:sy, ix in 1:sx
+            Diabatic_other[ix,iy,1,it] = Diabatic_other[ix,iy,1,it] - Fs[ix,iy,it]/dz
+    end
+    
+    
+#    return dBdt, UdBdx,VdBdy, WN2, Fs/dz, Diabatic_other
+    return Diabatic_other
+end
+
+
+
 
 
 

@@ -4,7 +4,9 @@ authors = ["Argel Ramírez Reyes <argel.ramirez@gmail.com>"]
 version = "0.0.1"
 
 [deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 ImageFiltering = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
 ImageSegmentation = "80713f31-8817-5129-9cf8-209ff8fb23e1"
 ImageView = "86fae568-95e7-573e-a6b2-d8a6b900c9ef"

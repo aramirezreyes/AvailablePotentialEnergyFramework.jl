@@ -53,6 +53,8 @@ export
     add_allcyclones!,
     averageallindistance,
     detect_cyclones,
+    get_diabatic_as_residual_buoyancy,
+    run_distributed_test,
     ##Constants
     R,             
     heat_capacity,
