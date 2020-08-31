@@ -6,7 +6,7 @@ function kernel_1d(window)
     if !isodd(window)
          window += 1
      end
-     kernel_t = centered(ones(window_t)./(window_t))
+     kernel_t = centered(ones(window)./(window))
  end
  
  
@@ -49,9 +49,6 @@ Create a kernel to perform a moving average filtering of a 3-d array along the d
     if !isodd(window_h)
          window_h += 1
      end
-     if !isodd(window_t)
-         window_t += 1
-     end
      kernel_h = ones(T,window_h)./(window_h)
      return  kernelfactors(( centered(kernel_h), centered(kernel_h) ))
  end
@@ -91,28 +88,30 @@ Create a kernel to perform a moving average filtering of a 3-d array along the d
  This function calls under the hood the imfilter function of Images.jl 
  
  """
- function filter_array_2!(array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
- #    filtered = similar(array)
+function filter_array_2!(buf :: Array{T,4},array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
+    sx,sy,sz,st = size(array)
+#    filtered = similar(array)
      if position == 2
          filtered = imfilter(imfilter(array, kernel4d(smooth_x,smooth_time),"circular"),kernel_4d_t(smooth_time),"inner")
      else
-     ###Filtering in space
-         for t in 1:size(array,4)
-             for z in 1:size(array,3)
-                 @views filtered[:,:,z,t] = imfilter(array[:,:,z,t], kernel_2d(smooth_x),"circular")
+         ###Filtering in space
+        
+         @info typeof(array) typeof(buf)
+         @inbounds for t in 1:st
+             @Threads.threads for z in 1:sz
+                 imfilter!(view(buf,:,:,z,t),array[:,:,z,t], kernel_2d(smooth_x),"circular")
              end
          end
+         @info typeof(array) typeof(buf)         
      ### filtering in time
-         for z in 1:size(array,3)
-             for y in 1:size(array,2)
-                 for x in 1:size(array,1)
-                    @views array[x,y,z,:] = imfilter(filtered[x,y,z,:], kernel_1d(smooth_time),"symmetric")
-                 end
+         @inbounds for z in 1:sz, y in 1:sy
+             @Threads.threads for x in 1:sx
+                 array[x,y,z,:] .= imfilter(buf[x,y,z,:], kernel_1d(smooth_time),"symmetric")
              end
          end
      end
-        # return array
- end    
+    return array
+end    
  
  """
  filter_array_2!(array,smooth_x,smooth_t,position)
@@ -126,23 +125,20 @@ This function calls under the hood the imfilter function of Images.jl
 """
  function filter_array_2!(array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
      filtered = similar(array)
+     sx,sy,st = size(array)
      if position == 2
          filtered = imfilter(imfilter(array, kernel4d(smooth_x,smooth_time),"circular"),kernel4d_t(smooth_time),"inner")
      else
-     ###Filtering in space
- 
-         for t in 1:size(array,3)
+         ###Filtering in space
+         for t in 1:st
              filtered[:,:,t] = imfilter(filtered,array[:,:,t], kernel_2d(smooth_x),"circular")
          end
- 
-     ### filtering in time
-         for y in 1:size(array,2)
-             for x in 1:size(array,1)
-                 array[x,y,:] = imfilter(filtered[x,y,:], kernel_1d(smooth_time),"symmetric")
-             end
+         ### filtering in time
+         for y in 1:sy, x in 1:sx
+             array[x,y,:] = imfilter(filtered[x,y,:], kernel_1d(smooth_time),"symmetric")
          end
      end
-         #return array
+     #return array
  end  
  """
      filter_array!(buffer,array,smooth_x,smooth_t,position)
