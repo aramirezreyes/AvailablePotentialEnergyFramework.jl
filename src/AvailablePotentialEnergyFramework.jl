@@ -28,7 +28,7 @@ include("apebudgets.jl")
 include("physicalconstants.jl")
 include("physicsfunctions.jl")
 include("useful_diagnostics.jl")
-include("ape_computation_from_julia_output.jl") #testing purposes
+#include("ape_computation_from_julia_output.jl") #testing purposes
 include("arrayfiltering.jl")
 include("datamanagement.jl")
 export
