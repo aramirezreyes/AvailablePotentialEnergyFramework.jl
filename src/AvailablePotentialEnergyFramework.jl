@@ -15,7 +15,7 @@ using Images: findlocalminima
 using ImageSegmentation: SegmentedImage, segment_labels, region_adjacency_graph, seeded_region_growing, labels_map
 using Interpolations: LinearInterpolation, interpolate, Gridded, Linear
 using NCDatasets: Dataset, variable
-using OffsetArrays:OffsetArray
+using OffsetArrays: OffsetArray
 using SparseArrays: SparseMatrixCSC
 using Statistics: mean
 using Parameters: @with_kw
