@@ -508,7 +508,7 @@ function get_diabatic_as_residual_buoyancy(B, RAD_b, Fs, U,V, W, N2, dx,dy, dz, 
     end
     
     
-#    return dBdt, UdBdx,VdBdy, WN2, Fs/dz, Diabatic_other
+
     return Diabatic_other
 end
 
