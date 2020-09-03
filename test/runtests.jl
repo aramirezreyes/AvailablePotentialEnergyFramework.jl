@@ -13,3 +13,5 @@ using Statistics: mean
 # @test integrate_vertically(testmat_2d,weight=testweights_2d) == reshape(55*(1:10)).*reverse(1:10),10,1)
 
 include("compositehelperfunctions.jl")
+include("physicsfunctions.jl")
+include("arrayfiltering.jl")
