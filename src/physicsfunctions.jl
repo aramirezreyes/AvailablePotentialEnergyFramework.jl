@@ -1,9 +1,31 @@
-function compute_N2_old(var_Tv,xBar_Tv,z)
+"""
+    distance(x1,x2,gridspacing :: Number)
+
+Compute the cartesian distance between two points given their indices and the gridspacing. It asummes uniform grid.
+
+
+"""
+function distance(x1,x2,gridspacing :: Number,weight=1)
+    return gridspacing*hypot( x2[1]-x1[1], x2[2]-x1[2] )
+end
+
+"""
+    velocity_topolar(u,v,index,center)
+Take a velocity vector, an origin of said vector and a center and return the tangential and azimuthal velocities with respect to that center.
+"""
+function velocity_topolar(u,v,index,center)
+    pos = index .- center
+    theta1 = atan(v,u)
+    theta2 = atan(pos[2],pos[1])
+    return -hypot(u,v) * cos(theta1 + theta2), hypot(u,v)*sin(theta1 + theta2)
+end
+
+function compute_N2_old_old(var_Tv,xBar_Tv,z)
 
     dxBar_Tv_dz                = zeros(1,length(z),size(var_Tv,4))
     dxBar_Tv_dz[1,1:end-1,:]  .= (xBar_Tv[1,1,2:end,:].-xBar_Tv[1,1,1:end-1,:])./(z[2:end]-z[1:end-1])
     dxBar_Tv_dz[1,end,:]      .= dxBar_Tv_dz[1,end-1,:]
-    N2                         = g .*(dxBar_Tv_dz .+ g/heat_capacity)[1,:,:]./xBar_Tv[1,1,:,:]  # Why is this using virtual and not potential, why g/cp check
+    N2                         = g .*(dxBar_Tv_dz .+ g/dryair.cp)[1,:,:]./xBar_Tv[1,1,:,:]  # Why is this using virtual and not potential, why g/cp check
     bb = findall(abs.(N2) .< 1e-6)
     for i=1:length(bb)
         if bb[i][1]>2
@@ -22,18 +44,50 @@ as_ints(a::AbstractArray{CartesianIndex{L}}) where L = reshape(reinterpret(Int, 
 
 function compute_N2(xBar_Tv,z)
     T = eltype(xBar_Tv)
-    N2              = zeros(T,length(z),size(xBar_Tv,4))
+    N2 = zeros(T,length(z),size(xBar_Tv,4))
     @views  N2[1:end-1,:]  .= (xBar_Tv[1,1,2:end,:].-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1])
     @views  N2[end,:]      .= N2[end-1,:]
-    @views  @. N2  = g * (N2 + g/heat_capacity)/xBar_Tv[1,1,:,:]  # Why is this using virtual and not potential, why g/cp check
-        bb1 = as_ints(findall((N2) .< 1e-6))
+    @views  @. N2  = g * (N2 + g/dryair.cp)/xBar_Tv[1,1,:,:] 
+        bb1 = as_ints(findall(abs.(N2) .< 1e-6))
+     
         bb = bb1[1,:]
         cc = bb1[2,:]
-        @inbounds for i in 1:length(bb)
-        if bb[i]>1
-          @views  @. N2[bb[i],cc] = 0.5 * (N2[bb[i]-1,cc] + N2[bb[i]+1,cc]) # If N2 is small, substite by mean of neighbours
-        else
-          @views @.  N2[bb[i],cc] = N2[bb[i]+1,cc]
+        
+    for i in 1:length(bb)
+        if 1 < bb[i] < size(z)[1]
+           N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
+        elseif bb[i] == 1
+           N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
+        elseif bb[i] == size(z)[1]
+            N2[bb[i],cc[i]] = N2[bb[i] - 1,cc[i]]
+        end
+    end
+    return N2
+end
+
+function compute_N2_attempt(xBar_Tv,z)
+    T = eltype(xBar_Tv)
+    N2 = zeros(T,length(z),size(xBar_Tv,4))
+    sz,st = size(N2)
+    factor = g/dryair.cp
+    @inbounds for indt in 1:st, indz in 1:(sz - 1)
+        dtvdz = (xBar_Tv[1,1,indz+1,indt] - xBar_Tv[1,1,indz,indt])/(z[indz+1] - z[indz])
+        N2[indz,indt] = g*(dtvdz + factor)/xBar_Tv[1,1,indz,indt]
+    end
+    @inbounds for indt in 1:st
+        N2[sz,indt] = N2[sz-1,indt]
+    end
+    bb1 = as_ints(findall(abs.(N2) .< 1e-6))
+   
+    bb = bb1[1,:]
+    cc = bb1[2,:]
+    for i in 1:length(bb)
+        if 1 < bb[i] < sz
+            N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
+        elseif bb[i] == 1
+            N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
+        elseif bb[i] == sz      
+            N2[bb[i],cc[i]] = N2[bb[i]-1,cc[i]]
         end
     end
     return N2
