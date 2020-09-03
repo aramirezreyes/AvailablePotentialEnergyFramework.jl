@@ -52,13 +52,13 @@ function getsmoothdata!(U,V, W, Tv, ThetaV, RAD, Fs, smooth_x,smooth_y,smooth_ti
 end
 
 function getsmoothdata_nospace(U::Array{T,4},V::Array{T,4}, W::Array{T,4}, Tv::Array{T,4}, ThetaV::Array{T,4}, RAD::Array{T,4}, Fs::Array{T,3}, smooth_x::Int,smooth_y::Int,smooth_time::Int,position::Int) where T <: Real
-    U = filter_array_nospace(U,smooth_x,smooth_time,position)
-    V = filter_array_nospace(V,smooth_x,smooth_time,position)
-    W = filter_array_nospace(W,smooth_x,smooth_time,position)
-    Tv = filter_array_nospace(Tv,smooth_x,smooth_time,position)
-    ThetaV = filter_array_nospace(ThetaV,smooth_x,smooth_time,position)
-    RAD = filter_array_nospace(RAD,smooth_x,smooth_time,position)
-    Fs = filter_array_nospace(Fs,smooth_x,smooth_time,position)
+    U = filter_array_nospace(U,smooth_time,position)
+    V = filter_array_nospace(V,smooth_time,position)
+    W = filter_array_nospace(W,smooth_time,position)
+    Tv = filter_array_nospace(Tv,smooth_time,position)
+    ThetaV = filter_array_nospace(ThetaV,smooth_time,position)
+    RAD = filter_array_nospace(RAD,smooth_time,position)
+    Fs = filter_array_nospace(Fs,smooth_time,position)
     return U, V, W, Tv, ThetaV, RAD, Fs
 end
 

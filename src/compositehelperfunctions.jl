@@ -259,7 +259,7 @@ function  azimuthalaverage_allcyclones(radius_bins,array :: Array{T,3},segmented
         if !isinteracting(segmentedcyclones,cyclone)
             cyclonecount += 1
             for bin in 1:(length(radius_bins) - 1)
-                average[:,bin] .+= averageallindistance((radius_bins[bin],radius_bins[bin+1]),array,labelsmap.==cyclone,cyclonescenters[cyclone][1],gridspacing)
+                average[:,bin] .+= averageallindistance((radius_bins[bin],radius_bins[bin+1]),array,cyclonescenters[cyclone][1],gridspacing)
             end
         end
     end
@@ -286,7 +286,7 @@ function  azimuthalaverage_allcyclones(radius_bins,array :: Array{T,2},segmented
         if !isinteracting(segmentedcyclones,cyclone)
             cyclonecount += 1
             for bin in 1:(length(radius_bins) - 1)
-                average[bin] += averageallindistance((radius_bins[bin],radius_bins[bin+1]),array,labelsmap.==cyclone,cyclonescenters[cyclone][1],gridspacing)
+                average[bin] += averageallindistance((radius_bins[bin],radius_bins[bin+1]),array,cyclonescenters[cyclone][1],gridspacing)
             end
         end
     end
