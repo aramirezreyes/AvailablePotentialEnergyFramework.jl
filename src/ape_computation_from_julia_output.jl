@@ -26,7 +26,7 @@ Float_type = Float32
     Ts            = sst                      #Sea surface temperature
     qs            = 25.7*1e-3 
     Tvs           = Ts*(1+epsilon*qs)
-    c1            = (R/heat_capacity)
+    c1            = (R/Dryair.cp)
     
 
 
@@ -52,8 +52,8 @@ Float_type = Float32
 
     ########## FilFloat_Typeering and chopping ##########
     
-    @. SHF    = g/(1*heat_capacity*Ts)*(SHF)                            
-    @. LHF    = g/(1*heat_capacity*Ts)*(epsilon*heat_capacity*Ts/L*LHF) 
+    @. SHF    = g/(1*Dryair.cp*Ts)*(SHF)                            
+    @. LHF    = g/(1*Dryair.cp*Ts)*(epsilon*Dryair.cp*Ts/L*LHF) 
     @. SHF    +=  LHF     # Now it is transformed
 
     
@@ -178,7 +178,7 @@ function testAPEBudget_distributed()
     Ts            = sst                      #Sea surface temperature
     qs            = 25.7*1e-3 
     Tvs           = Ts*(1+epsilon*qs)
-    c1            = (R/heat_capacity)
+    c1            = (R/Dryair.cp)
     
 
 
@@ -264,8 +264,8 @@ function testAPEBudget_distributed()
 
     @info "Beginning processing"
     
-    @. SHF    = g/(1*heat_capacity*Ts)*(SHF)                            
-    @. LHF    = g/(1*heat_capacity*Ts)*(epsilon*heat_capacity*Ts/L*LHF) 
+    @. SHF    = g/(1*Dryair.cp*Ts)*(SHF)                            
+    @. LHF    = g/(1*Dryair.cp*Ts)*(epsilon*Dryair.cp*Ts/L*LHF) 
     @. SHF    +=  LHF     # Now it is transformed
 
     

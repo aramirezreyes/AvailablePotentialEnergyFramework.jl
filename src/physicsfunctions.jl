@@ -25,7 +25,7 @@ function compute_N2_old_old(var_Tv,xBar_Tv,z)
     dxBar_Tv_dz                = zeros(1,length(z),size(var_Tv,4))
     dxBar_Tv_dz[1,1:end-1,:]  .= (xBar_Tv[1,1,2:end,:].-xBar_Tv[1,1,1:end-1,:])./(z[2:end]-z[1:end-1])
     dxBar_Tv_dz[1,end,:]      .= dxBar_Tv_dz[1,end-1,:]
-    N2                         = g .*(dxBar_Tv_dz .+ g/dryair.cp)[1,:,:]./xBar_Tv[1,1,:,:]  # Why is this using virtual and not potential, why g/cp check
+    N2                         = g .*(dxBar_Tv_dz .+ g/Dryair.cp)[1,:,:]./xBar_Tv[1,1,:,:]  # Why is this using virtual and not potential, why g/cp check
     bb = findall(abs.(N2) .< 1e-6)
     for i=1:length(bb)
         if bb[i][1]>2
@@ -47,7 +47,7 @@ function compute_N2(xBar_Tv,z)
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     @views  N2[1:end-1,:]  .= (xBar_Tv[1,1,2:end,:].-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1])
     @views  N2[end,:]      .= N2[end-1,:]
-    @views  @. N2  = g * (N2 + g/dryair.cp)/xBar_Tv[1,1,:,:] 
+    @views  @. N2  = g * (N2 + g/Dryair.cp)/xBar_Tv[1,1,:,:] 
         bb1 = as_ints(findall(abs.(N2) .< 1e-6))
      
         bb = bb1[1,:]
@@ -69,7 +69,7 @@ function compute_N2_attempt(xBar_Tv,z)
     T = eltype(xBar_Tv)
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     sz,st = size(N2)
-    factor = g/dryair.cp
+    factor = g/Dryair.cp
     @inbounds for indt in 1:st, indz in 1:(sz - 1)
         dtvdz = (xBar_Tv[1,1,indz+1,indt] - xBar_Tv[1,1,indz,indt])/(z[indz+1] - z[indz])
         N2[indz,indt] = g*(dtvdz + factor)/xBar_Tv[1,1,indz,indt]
@@ -97,7 +97,7 @@ end
 #WIP
 function compute_mse(T,z,qv)
     sz = size(T)
-    return  dryair.cp*T .+ g*reshape(z,(1,1,sz[3],1)) .+ liquidwater.Lv*qv
+    return  Dryair.cp*T .+ g*reshape(z,(1,1,sz[3],1)) .+ liquidwater.Lv*qv
 
 end
 

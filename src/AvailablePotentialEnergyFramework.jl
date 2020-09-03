@@ -58,7 +58,7 @@ export
     run_distributed_test,
     ##Constants
     R,             
-    heat_capacity,
+    Dryair,
     L,             
     epsilon,       
     g,
