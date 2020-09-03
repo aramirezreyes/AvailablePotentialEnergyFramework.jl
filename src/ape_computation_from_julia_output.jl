@@ -53,7 +53,7 @@ Float_type = Float32
     ########## FilFloat_Typeering and chopping ##########
     
     @. SHF    = g/(1*Dryair.cp*Ts)*(SHF)                            
-    @. LHF    = g/(1*Dryair.cp*Ts)*(epsilon*Dryair.cp*Ts/L*LHF) 
+    @. LHF    = g/(1*Dryair.cp*Ts)*(epsilon*Dryair.cp*Ts/Liquidwater.Lv*LHF) 
     @. SHF    +=  LHF     # Now it is transformed
 
     
@@ -97,7 +97,7 @@ Float_type = Float32
     dz          = 50
     #@info size(B), size(RAD), size(SHF), size(U),size(V) ,size(W), size(N2), size(dx),size(dy), size(dz), size(dt), size(x),size(y), size(z), size(t)
     #    dBdt, UdBdx,VdBdy, WN2, Qs, Diabatic_other = buoyancybudget(B, RAD, SHF, U,V ,W, N2, dx,dy, dz, dt, x,y, z, t);
-    Diabatic_other = buoyancybudget(B, RAD, SHF, U,V ,W, N2, dx,dy, dz, dt, x,y, z, t);
+    Diabatic_other = get_diabatic_as_residual_buoyancy(B, RAD, SHF, U,V ,W, N2, dx,dy, dz, dt);
     @info "hola"
 
     # APE budget
@@ -265,7 +265,7 @@ function testAPEBudget_distributed()
     @info "Beginning processing"
     
     @. SHF    = g/(1*Dryair.cp*Ts)*(SHF)                            
-    @. LHF    = g/(1*Dryair.cp*Ts)*(epsilon*Dryair.cp*Ts/L*LHF) 
+    @. LHF    = g/(1*Dryair.cp*Ts)*(epsilon*Dryair.cp*Ts/Liquidwater.Lv*LHF) 
     @. SHF    +=  LHF     # Now it is transformed
 
     
