@@ -10,14 +10,14 @@ module AvailablePotentialEnergyFramework
 
 
 using DataStructures: OrderedDict
-using ImageFiltering: imfilter, imfilter!, centered, kernelfactors, mapwindow, Kernel, Inner
+using ImageFiltering: imfilter, imfilter!, centered, kernelfactors, mapwindow, mapwindow!, Kernel, Inner
 using Images: findlocalminima
 using ImageSegmentation: SegmentedImage, segment_labels, region_adjacency_graph, seeded_region_growing, labels_map
 using Interpolations: LinearInterpolation, interpolate, Gridded, Linear
 using NCDatasets: Dataset, variable
 using OffsetArrays: OffsetArray
 using SparseArrays: SparseMatrixCSC
-using Statistics: mean
+using Statistics: mean, median!
 using Parameters: @with_kw
 
 
@@ -47,7 +47,8 @@ export
     cyclonecompositer,
     shifter,
     shifter!,
-    smoothfilter,
+    smooth_and_mask,
+    smooth_and_mask!,
     getapebudget,
     buoyancybudget,
     add_allcyclones!,
