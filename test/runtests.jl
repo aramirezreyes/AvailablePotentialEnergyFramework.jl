@@ -1,6 +1,7 @@
 using AvailablePotentialEnergyFramework
 using Test
-
+using NCDatasets: Dataset, variable
+using Statistics: mean
 
 # @test integrate_vertically(1:10,dz=2) == 110
 # @test integrate_vertically(1:10,dz=2,weight=2) == 220
@@ -11,4 +12,4 @@ using Test
 # @test integrate_vertically(testmat_2d,weight=testweights_1d) == reshape(10*(1:10)).*reverse((1:10),10,1)
 # @test integrate_vertically(testmat_2d,weight=testweights_2d) == reshape(55*(1:10)).*reverse(1:10),10,1)
 
-include("cyclone_detection.jl")
+include("compositehelperfunctions.jl")
