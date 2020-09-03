@@ -67,11 +67,5 @@ end
         binlimits = 0:2000:300000
         bins = [(binlimits[ind] , binlimits[ind + 1]) for ind in 1:(length(binlimits) - 1) ]
        @test_nowarn [averageallindistance(bin,addition,(256,256),2000) for bin in bins]
-
-    
-
-        
-        
-
     end
 end
