@@ -20,28 +20,17 @@ function velocity_topolar(u,v,index,center)
     return -hypot(u,v) * cos(theta1 + theta2), hypot(u,v)*sin(theta1 + theta2)
 end
 
-function compute_N2_old_old(var_Tv,xBar_Tv,z)
-
-    dxBar_Tv_dz                = zeros(1,length(z),size(var_Tv,4))
-    dxBar_Tv_dz[1,1:end-1,:]  .= (xBar_Tv[1,1,2:end,:].-xBar_Tv[1,1,1:end-1,:])./(z[2:end]-z[1:end-1])
-    dxBar_Tv_dz[1,end,:]      .= dxBar_Tv_dz[1,end-1,:]
-    N2                         = g .*(dxBar_Tv_dz .+ g/Dryair.cp)[1,:,:]./xBar_Tv[1,1,:,:]  # Why is this using virtual and not potential, why g/cp check
-    bb = findall(abs.(N2) .< 1e-6)
-    for i=1:length(bb)
-        if bb[i][1]>2
-            N2[bb[i]] = 0.5 * (N2[bb[i][1]-1,bb[i][2]] + N2[bb[i][1]+1,bb[i][2]]) # If N2 is small, substite by mean of neighbours
-        else
-            N2[bb[i]] = N2[bb[i][1]+1,bb[i][2]]
-        end
-    end
-
-    return N2
-end
-
+"""
+    as_ints(a::AbstractArray{CartesianIndex{L}}) where L
+Take an array of cartesian indices and transforms it to an array of integers
+"""
 as_ints(a::AbstractArray{CartesianIndex{L}}) where L = reshape(reinterpret(Int, a), (L, size(a)...))
 
 
-
+"""
+    compute_N2(xBar_Tv,z)
+Take a (1,1,size(z),size(t)) profile of temperature or virtual temperature and return the Brunt - Väisälä frequency at each z level and at each t.
+"""
 function compute_N2(xBar_Tv,z)
     T = eltype(xBar_Tv)
     N2 = zeros(T,length(z),size(xBar_Tv,4))
@@ -50,8 +39,8 @@ function compute_N2(xBar_Tv,z)
     @views  @. N2  = g * (N2 + factor)/xBar_Tv[1,1,:,:]
     @views  N2[end,:]      .= N2[end-1,:]
         bb1 = as_ints(findall(abs.(N2) .< 1e-6))
-        bb = bb1[1,:]
-        cc = bb1[2,:]   
+        @views bb = bb1[1,:]
+        @views cc = bb1[2,:]   
     @inbounds for i in 1:length(bb)
         if 1 < bb[i] < size(z)[1]
            N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
@@ -63,7 +52,10 @@ function compute_N2(xBar_Tv,z)
     end
     return N2
 end
-
+"""
+    compute_N2_attempt(xBar_Tv,z)
+Take a (1,1,size(z),size(t)) profile of temperature or virtual temperature and return the Brunt - Väisälä frequency at each z level and at each t. Tried doing it faster that the other function but have not been succesful.
+"""
 function compute_N2_attempt(xBar_Tv,z)
     T = eltype(xBar_Tv)
     N2 = zeros(T,length(z),size(xBar_Tv,4))
