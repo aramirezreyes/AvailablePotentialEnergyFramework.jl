@@ -216,14 +216,7 @@ The points should be masked by a boolean array. It assumes a uniform gridspacing
 function averageallindistance(radiusbin,array :: Array{T,3},center,gridspacing = 1) where T
     sx,sy,sz = size(array)
     average = zeros(T,sz) 
-    count = 0
-    @inbounds for index in CartesianIndices((1:sx,1:sy))
-        if isindexindistancebin(radiusbin,index,center,gridspacing)
-            count += 1
-            @views average[:] .+= array[index,:]
-        end
-    end
-    iszero(count) ? count :  average./count
+    averageallindistance!(average,radiusbin,array,center,gridspacing)
 end
 
 """
