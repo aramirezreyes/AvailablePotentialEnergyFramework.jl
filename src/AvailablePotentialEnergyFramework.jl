@@ -17,7 +17,7 @@ using Interpolations: LinearInterpolation, interpolate, Gridded, Linear
 using NCDatasets: Dataset, variable
 using OffsetArrays: OffsetArray
 using SparseArrays: SparseMatrixCSC
-using Statistics: mean, median!
+using Statistics: mean, median!, mean!
 using Parameters: @with_kw
 
 
@@ -59,7 +59,8 @@ export
     ##Constants
     R,             
     Dryair,
-    L,             
+    Watervapor,
+    Liquidwater,             
     epsilon,       
     g,
     #Physics functions
