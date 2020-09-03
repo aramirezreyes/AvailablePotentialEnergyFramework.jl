@@ -14,4 +14,4 @@ using Statistics: mean
 
 include("compositehelperfunctions.jl")
 include("physicsfunctions.jl")
-include("arrayfiltering.jl")
+#include("arrayfiltering.jl")

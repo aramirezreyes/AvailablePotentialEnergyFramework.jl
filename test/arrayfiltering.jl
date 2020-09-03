@@ -1,11 +1,6 @@
 using AvailablePotentialEnergyFramework, ImageFiltering, Test
-
-
-@testset "APE helper functions" begin
-
-    
-    @testset "Filter arrays 1 and 2" begin
-       
+@testset "Array filtering" begin
+    @testset "Filter arrays 1 and 2" begin     
         @testset "Filter_array!" begin
             ones3d  = ones(20,20,20)
             ones4d  = ones(20,20,20,20)
@@ -61,8 +56,4 @@ using AvailablePotentialEnergyFramework, ImageFiltering, Test
             
         end
     end
-    
-
-
-
 end

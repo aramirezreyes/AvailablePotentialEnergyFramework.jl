@@ -45,15 +45,14 @@ as_ints(a::AbstractArray{CartesianIndex{L}}) where L = reshape(reinterpret(Int, 
 function compute_N2(xBar_Tv,z)
     T = eltype(xBar_Tv)
     N2 = zeros(T,length(z),size(xBar_Tv,4))
-    @views  N2[1:end-1,:]  .= (xBar_Tv[1,1,2:end,:].-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1])
+    factor = g/Dryair.cp
+    @views  N2[1:end-1,:]  .= (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1])
+    @views  @. N2  = g * (N2 + factor)/xBar_Tv[1,1,:,:]
     @views  N2[end,:]      .= N2[end-1,:]
-    @views  @. N2  = g * (N2 + g/Dryair.cp)/xBar_Tv[1,1,:,:] 
         bb1 = as_ints(findall(abs.(N2) .< 1e-6))
-     
         bb = bb1[1,:]
-        cc = bb1[2,:]
-        
-    for i in 1:length(bb)
+        cc = bb1[2,:]   
+    @inbounds for i in 1:length(bb)
         if 1 < bb[i] < size(z)[1]
            N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
         elseif bb[i] == 1
@@ -70,18 +69,21 @@ function compute_N2_attempt(xBar_Tv,z)
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     sz,st = size(N2)
     factor = g/Dryair.cp
-    @inbounds for indt in 1:st, indz in 1:(sz - 1)
-        dtvdz = (xBar_Tv[1,1,indz+1,indt] - xBar_Tv[1,1,indz,indt])/(z[indz+1] - z[indz])
-        N2[indz,indt] = g*(dtvdz + factor)/xBar_Tv[1,1,indz,indt]
+    @inbounds @simd for indt in 1:st
+        for indz in 1:(sz - 1)
+            Tv = xBar_Tv[1,1,indz,indt]
+        dtvdz = (xBar_Tv[1,1,indz+1,indt] - Tv)/(z[indz+1] - z[indz])
+        N2[indz,indt] = g*(dtvdz + factor)/Tv
+        end
     end
-    @inbounds for indt in 1:st
+    @inbounds @simd for indt in 1:st
         N2[sz,indt] = N2[sz-1,indt]
     end
     bb1 = as_ints(findall(abs.(N2) .< 1e-6))
    
     bb = bb1[1,:]
     cc = bb1[2,:]
-    for i in 1:length(bb)
+    @inbounds @simd for i in 1:length(bb)
         if 1 < bb[i] < sz
             N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
         elseif bb[i] == 1
