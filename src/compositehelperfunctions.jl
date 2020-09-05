@@ -158,9 +158,9 @@ center = size(array)[1:2] .÷ 2
 adjacency, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
 cyclonecount = 0
 if maskcyclones   
-    @inbounds for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
+    for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
         labelsmap = labels_map(segmentedcyclones)
-        @inbounds for ind in eachindex(array)
+        for ind in eachindex(array)
             if labelsmap[ind] == cyclone
                 buf2[ind] = array[ind]
             else
@@ -173,7 +173,7 @@ if maskcyclones
         end
     end
 else #no cyclone masking
-    @inbounds for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
+    for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
         if !isinteracting(adjacency.weights,cyclone)           
             cyclonecount += 1
             addition .+=  shifter!(buf1,array,center,cyclonescenters[cyclone][1])
