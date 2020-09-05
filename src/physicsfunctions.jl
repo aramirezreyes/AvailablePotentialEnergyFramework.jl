@@ -10,17 +10,6 @@ function distance(x1,x2,gridspacing :: Number,weight=1)
 end
 
 """
-    velocity_topolar(u,v,index,center)
-Take a velocity vector, an origin of said vector and a center and return the tangential and azimuthal velocities with respect to that center.
-"""
-function velocity_topolar(u,v,index,center)
-    pos = index .- center
-    theta1 = atan(v,u)
-    theta2 = atan(pos[2],pos[1])
-    return -hypot(u,v) * cos(theta1 + theta2), hypot(u,v)*sin(theta1 + theta2)
-end
-
-"""
     as_ints(a::AbstractArray{CartesianIndex{L}}) where L
 Take an array of cartesian indices and transforms it to an array of integers
 """

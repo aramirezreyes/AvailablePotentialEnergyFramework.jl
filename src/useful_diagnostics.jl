@@ -18,6 +18,16 @@ function average_precipiation_per_pw_bin(pw,precipitation,bins,binspacing)
 end
 
 
+"""
+    velocity_topolar(u,v,index,center)
+Take a velocity vector, an origin of said vector and a center and return the tangential and azimuthal velocities with respect to that center.
+"""
+function velocity_topolar(u,v,index,center)
+    pos = index .- center
+    theta1 = atan(v,u)
+    theta2 = atan(pos[2],pos[1])
+    return -hypot(u,v) * cos(theta1 + theta2), hypot(u,v)*sin(theta1 + theta2)
+end
 
 """
     velocity_cartesian_to_polar(u,v,index_of_point = (0,0),index_of_center = (0,0))
