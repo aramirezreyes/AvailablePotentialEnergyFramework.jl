@@ -9,3 +9,4 @@
 settings.json
 *.jld
 .vscode*
+*/.DS_Store
