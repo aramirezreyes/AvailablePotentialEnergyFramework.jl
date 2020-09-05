@@ -44,28 +44,42 @@ end
 
 @testset "Cyclone detection tools" begin
     
-    psfc = Dataset("test/testfile_2d_withcyclones.nc") do ds 
+    psfc = Dataset("test/testfiles/test_composite_PSFC_TABS.nc") do ds 
         variable(ds, "PSFC")[:,:,:]
+    end
+    TABS = Dataset("test/testfiles/test_composite_PSFC_TABS.nc") do ds 
+        variable(ds, "TABS")[:,:,:,:]
     end
     @testset "Detect centers" begin
         pressure_anomaly = psfc .- mean(psfc,dims=(1,2))
         centerstest =  AvailablePotentialEnergyFramework.findcyclonecenters_aspressureminima(pressure_anomaly[:,:,1],-5)
 
-        @test length(centerstest) == 3
+        @test length(centerstest) == 5
 
         centers_and_labels,cyclones = detect_cyclones(pressure_anomaly[:,:,1],-5,2000)
         
-        @test length(centers_and_labels) == 4
+        @test length(centers_and_labels) == 6
         @test all([cyclones.segment_pixel_count[key] > 1 for key in keys(cyclones.segment_pixel_count)])
         
-        (cyclonecount,addition) = AvailablePotentialEnergyFramework.add_allcyclones(psfc[:,:,1],cyclones,centers_and_labels; maskcyclones = false)
-        @test cyclonecount == 1
+        (cyclonecount_2d,addition_2d) = AvailablePotentialEnergyFramework.add_allcyclones(psfc[:,:,1],cyclones,centers_and_labels; maskcyclones = false)
+        @test cyclonecount_2d == 3
         
-        (cyclonecount,addition) = AvailablePotentialEnergyFramework.add_allcyclones(psfc[:,:,1],cyclones,centers_and_labels; maskcyclones = true)
-        @test cyclonecount == 1
+        (cyclonecount_2d,addition_2d) = AvailablePotentialEnergyFramework.add_allcyclones(psfc[:,:,1],cyclones,centers_and_labels; maskcyclones = true)
+        @test cyclonecount_2d == 3
+
+        (cyclonecount_3d,addition_3d) = AvailablePotentialEnergyFramework.add_allcyclones(TABS[:,:,:,1],cyclones,centers_and_labels; maskcyclones = false)
+        @test cyclonecount_3d == 3
+        
+        (cyclonecount_3d,addition_3d) = AvailablePotentialEnergyFramework.add_allcyclones(TABS[:,:,:,1],cyclones,centers_and_labels; maskcyclones = true)
+        @test cyclonecount_3d == 3
         
         binlimits = 0:2000:300000
         bins = [(binlimits[ind] , binlimits[ind + 1]) for ind in 1:(length(binlimits) - 1) ]
-       @test_nowarn [averageallindistance(bin,addition,(256,256),2000) for bin in bins]
+        
+        @test_nowarn [averageallindistance(bin,addition_2d,(128,128),4000) for bin in bins]
+
+       @test_nowarn [averageallindistance(bin,addition_3d,(128,128),4000) for bin in bins]
+       
+
     end
 end
