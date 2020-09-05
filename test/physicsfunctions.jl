@@ -1,7 +1,7 @@
 @testset "Brunt-Vaisala" begin
     
 
-@info Γneutral = AvailablePotentialEnergyFramework.g/AvailablePotentialEnergyFramework.Dryair.cp
+Γneutral = AvailablePotentialEnergyFramework.g/AvailablePotentialEnergyFramework.Dryair.cp
 Γstable = Γneutral - 10e-3
 Γunstable = Γneutral + 10e-3
 
