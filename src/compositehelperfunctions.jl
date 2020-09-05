@@ -158,10 +158,10 @@ center = size(array)[1:2] .÷ 2
 adjacency, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
 cyclonecount = 0
 if maskcyclones   
-    for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
+    @inbounds for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
         labelsmap = labels_map(segmentedcyclones)
-        for ind in eachindex(array)
-            if labelsmap[ind] == cyclone
+        @inbounds for ind in CartesianIndices(array)
+            if labelsmap[ind[1],ind[2]] == cyclone
                 buf2[ind] = array[ind]
             else
                 buf2[ind] = 0.0
@@ -173,7 +173,7 @@ if maskcyclones
         end
     end
 else #no cyclone masking
-    for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
+    @inbounds for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
         if !isinteracting(adjacency.weights,cyclone)           
             cyclonecount += 1
             addition .+=  shifter!(buf1,array,center,cyclonescenters[cyclone][1])
@@ -205,7 +205,7 @@ function averageallindistance(radiusbin,array :: Array{T,2},center,gridspacing =
                 average += array[index]
         end 
     end
-    iszero(count) ? count :  average/count
+    iszero(count) ? average :  average/count
 end 
 
 """
