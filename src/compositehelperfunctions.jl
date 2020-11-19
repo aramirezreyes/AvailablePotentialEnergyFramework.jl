@@ -154,7 +154,8 @@ function add_allcyclones!(addition,buf1,buf2,array,segmentedcyclones,cyclonescen
 if !(size(addition) == size(buf1) == size(array))
     DimensionMismatch("Addition, buffer and array must all have the same dimensions")
 end
-center = size(array)[1:2] .÷ 2
+    center = size(array)[1:2] .÷ 2
+    #@info center
 adjacency, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
 cyclonecount = 0
 if maskcyclones   
@@ -177,11 +178,14 @@ else #no cyclone masking
         if !isinteracting(adjacency.weights,cyclone)           
             cyclonecount += 1
             addition .+=  shifter!(buf1,array,center,cyclonescenters[cyclone][1])
+        else
+            @debug "Cyclone is too close to another one"
         end
     end
 end
 return cyclonecount
 
+    
 end
 
 
@@ -213,10 +217,11 @@ end
 Create an average of the quantity in array at all the points located between radiusbin[1] and radiusbin[2] from a center.
 The points should be masked by a boolean array. It assumes a uniform gridspacing.
 """
-function averageallindistance(radiusbin,array :: Array{T,3},center,gridspacing = 1) where T
+function averageallindistance(radiusbin,array :: Array{T,3},center,gridspacing = one{T} ) where T
     sx,sy,sz = size(array)
     average = zeros(T,sz) 
     averageallindistance!(average,radiusbin,array,center,gridspacing)
+    return average
 end
 
 """
@@ -229,15 +234,17 @@ function averageallindistance!(average,radiusbin,array :: Array{T,3},center,grid
     count = 0
     @inbounds for index in CartesianIndices((1:sx,1:sy))
         if isindexindistancebin(radiusbin,index,center,gridspacing)
+            #@info "In distance bin"
             count += 1
-            @views average[:] .+= array[index,:]
+            for idz in 1:sz
+                average[idz] += array[index[1],index[2],idz]
+            end
         end
     end
     if !iszero(count)
-        return average./count
-    else
-        return average
+        average .= average./count
     end
+    return average
 end
 
 
