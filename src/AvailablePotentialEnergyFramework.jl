@@ -74,6 +74,7 @@ export
     #math functions
     integrate_vertically,
     average_precipitation_per_pw_bin,
+    average_precipitation_per_pw_bin_dayang,
     #Files and datamanagement
     smooth_vars_and_write_to_netcdf!
     
