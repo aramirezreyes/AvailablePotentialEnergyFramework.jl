@@ -297,5 +297,62 @@ function get_okubo_weiss(u,v,dx,dy)
     get_okubo_weiss!(ow,u,v,dx,dy)
     return ow
 end
+#from Clausius-Clapeyron relation/August-Roche-Magnus formula
+function get_saturation_vapor_pressure(T)
+    return 6.112*exp(17.67 * (T-273.15) / (243.5 + (T - 273.15)))
+end
 
 
+function get_partial_vapor_pressure(r,p)
+    return r*p/(R*epsilon)
+end
+
+function get_mixing_ratio(e,p)
+    return epsilon*e/(p - e)
+end
+
+function get_specific_entropy(T,r,p)
+    vapor_pressure = get_partial_vapor_pressure(r,p)
+    saturation_vapor_pressure = get_saturation_vapor_pressure(T)
+    RH = min(vapor_pressure/saturation_vapor_pressure,1.0)
+    specific_entropy =  (Dryair.cp + r * Liquidwater.Lv) *
+        log(T) - Dryair.R * log(p - vapor_pressure) +
+        Liquidwater.Lv * r / T - r * Watervapor.r * log(RH)
+end 
+
+function get_lifted_condensation_level(T,RH,P) 
+    return P * (RH^(T/1669.0-122.0*RH-T))
+end
+#we need temperature to celsius
+#saturation vapor pressure
+
+
+function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,t,p,ptop=50)
+n_valid_levels = findfirst(>(ptop),p)
+p = p[begin:n_valid_levels]
+t = t[begin:n_valid_levels]
+r = r[begin:n_valid_levels]
+temp_diff_parcel_env = similar(P)
+
+parcel_sat_vapor_pressure = get_saturation_vapor_pressure(tparcel)
+parcel_get_vapor_pressure = get_partial_vapor_pressure(rparcel,pparcel)
+parcel_rh = min(parcel_sat_vapor_pressure / parcel_get_vapor_pressure, 1.0)
+parcel_specific_entropy = get_specific_entropy(tparcel,rparcel,pparcel)
+
+parcel_lcl = get_lifted_condensation_level(tparcel,parcel_rh,pparcel)
+
+below_lcl = findall(>=(parcel_lcl),p)
+above_lcl = findall(<(parcel_lcl),p)
+
+#These two must populate buoyancy of lifted parcel_get_vapor_pressure
+
+for level in below_lcl
+
+
+
+
+end
+
+for level in above_lvl
+
+end
