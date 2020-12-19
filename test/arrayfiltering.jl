@@ -1,5 +1,16 @@
 using AvailablePotentialEnergyFramework, ImageFiltering, Test
 @testset "Array filtering" begin
+
+    @testset "Kernel creation" begin
+
+    @test AvailablePotentialEnergyFramework.kernel_4d(false,false) == 
+    ImageFiltering.kernelfactors((centered([(1.0)]),centered([(1.0)]),centered([(1.0)]),centered([(1.0)]) ))
+
+    @test AvailablePotentialEnergyFramework.kernel_4d(5,false) == 
+    ImageFiltering.kernelfactors((centered(ones(5)./5.0),centered(ones(5)./5.0),centered([(1.0)]),centered([(1.0)]) ))
+
+
+    end     
     @testset "Filter arrays 1 and 2" begin     
         @testset "Filter_array!" begin
             ones3d  = ones(20,20,20)

@@ -15,15 +15,24 @@ function kernel_1d(window)
 Create a kernel to perform a moving average filtering of a 4-d array along the dimensions 1,2 and 4. It will use window_h (dimensions 1 and 2) and window_t (dimension 4)  as windows sizes unless the given vaules are even, in which case it will add one to the given value before creating the kernel. This kernel has to be passed into imfilter or imfilter!    
 """ 
  function kernel_4d(window_h,window_t,T::Type=Float64)
-     if !isodd(window_h)
-         window_h += 1
-     end
+    kernel_h = if (window_h == 1) | (window_h == false)
+        centered([T(1.0)])
+    else
+        !isodd(window_h) && (window_h += 1 )
+        ones(T,window_h)./(window_h)
+    end
      if !isodd(window_t)
          window_t += 1
      end
- 
-     kernel_h = ones(T,window_h)./(window_h)
-     return kernelfactors(( centered(kernel_h), centered(kernel_h), centered([T(1.0)]), centered([T(1.0)]) ))
+     
+    kernel_t = if (window_t == 1) | (window_t == false)
+        centered([T(1.0)])
+    else
+        !isodd(window_t) && (window_t += 1 )
+        ones(T,window_t)./(window_t)
+    end
+    
+     return kernelfactors(( kernel_h, kernel_h, centered([T(1.0)]) , kernel_t ))
  end
 
  """
