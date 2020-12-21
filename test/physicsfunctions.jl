@@ -49,5 +49,12 @@ end
     pparcel = pres[1,timeindex]
     tparcel = tabs[1,timeindex]
     rparcel = r[1,timeindex]
-    @test_broken get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,tabs,r,pres)
+
+    #I will create a similar profile but with a perturbation to see what happens
+    tabs_unstable = copy(tabs)
+    tabs_unstable[2:40,:] .- 7.0
+    tabs_unstable[41:end,:] .+ 7.0
+
+    @test_broken get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,tabs[:,timeindex],r[:,timeindex],pres[:,timeindex])
+    @test_broken get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,tabs_unstable[:,timeindex],r[:,timeindex],pres[:,timeindex])
 end

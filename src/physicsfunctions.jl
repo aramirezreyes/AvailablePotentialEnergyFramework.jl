@@ -330,9 +330,9 @@ function get_specific_entropy(temperature,mixing_ratio,pressure)
     vapor_pressure = get_partial_vapor_pressure(mixing_ratio,pressure)
     saturation_vapor_pressure = get_saturation_vapor_pressure(temperature)
     RH = min(vapor_pressure/saturation_vapor_pressure,1.0)
-    specific_entropy =  (Dryair.cp + mixing_ratio * Liquidwater.Lv) *
+    specific_entropy =  (Dryair.cp + mixing_ratio * Liquidwater.cp) *
         log(temperature) - Dryair.R * log(pressure - vapor_pressure) +
-        Liquidwater.Lv * mixing_ratio / temperature - mixing_ratio * Watervapor.r * log(RH)
+        Liquidwater.Lv * mixing_ratio / temperature - mixing_ratio * Watervapor.R * log(RH)
 end 
 
 """
@@ -371,13 +371,15 @@ function get_virtual_temperature(temperature,mixing_ratio_total_water,mixing_rat
     return temperature*(1 + mixing_ratio_water_vapor/epsilon)/(1 + mixing_ratio_total_water)
 end
 
+"""
+    get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50)
+"""
 function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50)
-    n_valid_levels = findfirst(>(ptop),p)
+    n_valid_levels = findfirst(<(ptop),p)
     p = p[begin:n_valid_levels]
     t = t[begin:n_valid_levels]
     r = r[begin:n_valid_levels]
-    tvirtual_diff_parcel_env = similar(P)
-
+    tvirtual_diff_parcel_env = similar(p)
     parcel_sat_vapor_pressure = get_saturation_vapor_pressure(tparcel)
     parcel_get_vapor_pressure = get_partial_vapor_pressure(rparcel,pparcel)
     parcel_rh = min(parcel_sat_vapor_pressure / parcel_get_vapor_pressure, 1.0)
@@ -398,26 +400,28 @@ function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50)
     end
 
     #We start with environmental values of temperature, mixing ratio, entropy etc
-    for level in above_lvl
+    for level in above_lcl
         niter = 0
         t_previousiter = t[level]
-        saturation_vapor_pressure_previousiter = get_saturation_vapor_pressure(tpreviousiter)
-        mixing_ratio_previousiter = get_mixing_ratio(env_saturation_vapor_pressure,p[level])
+        saturation_vapor_pressure_previousiter = get_saturation_vapor_pressure(t_previousiter)
+        mixing_ratio_previousiter = get_mixing_ratio(saturation_vapor_pressure_previousiter,p[level])
         t_currentiter = 0.0
-        while !(abs(t_previousiter - t_currentiter))
+        mixing_ratio_currentiter = 0.0
+        while (abs(t_previousiter - t_currentiter) > 0.001 )
             niter += 1
             t_currentiter = t_previousiter
             saturation_vapor_pressure_currentiter = get_saturation_vapor_pressure(t_currentiter)
             mixing_ratio_currentiter = get_mixing_ratio(saturation_vapor_pressure_currentiter,p[level])
-            dsdt = (Dryair.cp + rparcel*Liquidwater.cp + Liquidwater.lv*Liquidwater.lv*mixing_ratio_currentiter/
+            dsdt = (Dryair.cp + rparcel*Liquidwater.cp + Liquidwater.Lv*Liquidwater.Lv*mixing_ratio_currentiter/
             (Watervapor.R*t_currentiter*t_currentiter))/t_currentiter
             vapor_pressure_currentiter = get_partial_vapor_pressure(mixing_ratio_currentiter,p[level])
             entropy_currentinter = (Dryair.cp+rparcel*Liquidwater.cp)*log(t_currentiter) - 
             Dryair.R*log(p[level]-vapor_pressure_currentiter) + Liquidwater.Lv*mixing_ratio_currentiter / t_currentiter
 
-            t_previousiter = t_currentiter + step*(parcel_specific_entropy - entropy_currentinter)/dsdt
+            temperature_step = 0.3
+            t_previousiter = t_currentiter + temperature_step*(parcel_specific_entropy - entropy_currentinter)/dsdt
 
-            if (NC > 500 ) | (vapor_pressure_currentiter > ( p[level] - 1.0) )
+            if (niter > 500 ) | (vapor_pressure_currentiter > ( p[level] - 1.0) )
                 @info "Something went wrong"
             end
         end
