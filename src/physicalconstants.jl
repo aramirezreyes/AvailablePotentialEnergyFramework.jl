@@ -1,5 +1,5 @@
 const R             = 287 # Ideal gas constants
-const epsilon       = 29/18-1
+const epsilon       = 18.016/28.966
 const g             = 10 #acceleration of gravity
 
 @with_kw struct Substance
