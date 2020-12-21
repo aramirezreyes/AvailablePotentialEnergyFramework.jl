@@ -28,7 +28,7 @@
         array_allindistance_3d
     end
     
-    @test isapprox.(AvailablePotentialEnergyFramework.averageallindistance((99,100),array_allindistance_3d,origin), 100; rtol = 1) == fill(true,10)
+    #@test isapprox.(AvailablePotentialEnergyFramework.averageallindistance((99,100),array_allindistance_3d,origin), 100; rtol = 1) == fill(true,10)
 
     @test all(isapprox.(AvailablePotentialEnergyFramework.velocity_topolar(10,0,x4,origin),(0,10),atol=0.1))
 
@@ -44,10 +44,10 @@ end
 
 @testset "Cyclone detection tools" begin
     
-    psfc = Dataset("test/testfiles/test_composite_PSFC_TABS.nc") do ds 
+    psfc = Dataset(joinpath(@__DIR__,"testfiles/test_composite_PSFC_TABS.nc")) do ds 
         variable(ds, "PSFC")[:,:,:]
     end
-    TABS = Dataset("test/testfiles/test_composite_PSFC_TABS.nc") do ds 
+    TABS = Dataset(joinpath(@__DIR__,"testfiles/test_composite_PSFC_TABS.nc")) do ds 
         variable(ds, "TABS")[:,:,:,:]
     end
     @testset "Detect centers" begin
