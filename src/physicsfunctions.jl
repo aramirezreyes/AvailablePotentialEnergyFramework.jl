@@ -297,62 +297,133 @@ function get_okubo_weiss(u,v,dx,dy)
     get_okubo_weiss!(ow,u,v,dx,dy)
     return ow
 end
-#from Clausius-Clapeyron relation/August-Roche-Magnus formula
+
+"""
+    get_saturation_vapor_pressure(T)
+Receive temperature T in Kelvin and compute the saturation vapor pressure in hPa from the August-Roche-Magnus formula that approximates the solution to the Clausius-Clapeyron relationship (Wikipedia contributors. (2020, December 19). Clausius–Clapeyron relation. In Wikipedia, The Free Encyclopedia. Retrieved 06:57, December 20, 2020, from https://en.wikipedia.org/w/index.php?title=Clausius%E2%80%93Clapeyron_relation&oldid=995159175)
+"""
 function get_saturation_vapor_pressure(T)
     return 6.112*exp(17.67 * (T-273.15) / (243.5 + (T - 273.15)))
 end
 
-
-function get_partial_vapor_pressure(r,p)
-    return r*p/(R*epsilon)
+"""
+    get_partial_vapor_pressure(mixing_ratio,pressure)
+Receive a water vapor mixing ratio (unitless g/g) and environmental pressure and compute the partial pressure of water vapor in the same units as the input pressure.
+"""
+function get_partial_vapor_pressure(mixing_ratio,pressure)
+    return mixing_ratio*pressure/(epsilon + mixing_ratio)
 end
 
-function get_mixing_ratio(e,p)
-    return epsilon*e/(p - e)
+"""
+    get_mixing_ratio(water_vapor_partial_pressure,env_pressure)
+Receive a water vapor mixing ratio (unitless g/g) and environmental pressure and compute the partial pressure of water vapor in the same units as the incoming pressure.
+"""
+function get_mixing_ratio(water_vapor_partial_pressure,env_pressure)
+    return epsilon*water_vapor_partial_pressure/(env_pressure - water_vapor_partial_pressure)
 end
 
-function get_specific_entropy(T,r,p)
-    vapor_pressure = get_partial_vapor_pressure(r,p)
-    saturation_vapor_pressure = get_saturation_vapor_pressure(T)
+"""
+    get_specific_entropy(temperature,mixing_ratio,pressure)
+Receive temperature in Kelvin, water vapor mixing ratio (unitless g/g) and pressure (hPa) and compute the specific entropy of a parcel using equation in Emmanuel's (E94, EQN. 4.5.9)
+"""
+function get_specific_entropy(temperature,mixing_ratio,pressure)
+    vapor_pressure = get_partial_vapor_pressure(mixing_ratio,pressure)
+    saturation_vapor_pressure = get_saturation_vapor_pressure(temperature)
     RH = min(vapor_pressure/saturation_vapor_pressure,1.0)
-    specific_entropy =  (Dryair.cp + r * Liquidwater.Lv) *
-        log(T) - Dryair.R * log(p - vapor_pressure) +
-        Liquidwater.Lv * r / T - r * Watervapor.r * log(RH)
+    specific_entropy =  (Dryair.cp + mixing_ratio * Liquidwater.Lv) *
+        log(temperature) - Dryair.R * log(pressure - vapor_pressure) +
+        Liquidwater.Lv * mixing_ratio / temperature - mixing_ratio * Watervapor.r * log(RH)
 end 
 
-function get_lifted_condensation_level(T,RH,P) 
-    return P * (RH^(T/1669.0-122.0*RH-T))
+"""
+    get_lifted_condensation_level(temperature,relative_humidity,pressure)   
+Receive temperature in Kelvin, relative humidity (unitless) and pressure (hPa) and compute the lifted condensation level based on Emanuel's E94 "calcsound.f" code at http://texmex.mit.edu/pub/emanuel/BOOK/
+"""
+function get_lifted_condensation_level(temperature,relative_humidity,pressure) 
+    return pressure * (relative_humidity^(temperature/(1669.0-122.0*relative_humidity-temperature)))
 end
 #we need temperature to celsius
 #saturation vapor pressure
 
-
-function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,t,p,ptop=50)
-n_valid_levels = findfirst(>(ptop),p)
-p = p[begin:n_valid_levels]
-t = t[begin:n_valid_levels]
-r = r[begin:n_valid_levels]
-temp_diff_parcel_env = similar(P)
-
-parcel_sat_vapor_pressure = get_saturation_vapor_pressure(tparcel)
-parcel_get_vapor_pressure = get_partial_vapor_pressure(rparcel,pparcel)
-parcel_rh = min(parcel_sat_vapor_pressure / parcel_get_vapor_pressure, 1.0)
-parcel_specific_entropy = get_specific_entropy(tparcel,rparcel,pparcel)
-
-parcel_lcl = get_lifted_condensation_level(tparcel,parcel_rh,pparcel)
-
-below_lcl = findall(>=(parcel_lcl),p)
-above_lcl = findall(<(parcel_lcl),p)
-
-#These two must populate buoyancy of lifted parcel_get_vapor_pressure
-
-for level in below_lcl
-
-
-
+"""
+    specific_humidity_to_mixing_ratio(specific_humidity)
+Take a specific humidity (unitless g/g) and return a mixing ratio
+"""
+function specific_humidity_to_mixing_ratio(specific_humidity)
+return mixing_ratio = specific_humidity / (1 - specific_humidity)
 
 end
 
-for level in above_lvl
 
+"""
+    mixing_ratio_to_specific_humidity(mixing_ratio)
+Take a mixing ratio (unitless g/g) and return a specific humidity
+"""
+function mixing_ratio_to_specific_humidity(mixing_ratio)
+    return q = mixing_ratio / (1 + mixing_ratio)
+end
+
+"""
+    get_virtual_temperature(temperature,mixing_ratio_total_water,mixing_ratio_water_vapor)
+Receive temperature (K) and mixing ratios of total water and water vapor (unitless g/g) and compute the virtual temperature
+"""
+function get_virtual_temperature(temperature,mixing_ratio_total_water,mixing_ratio_water_vapor)
+    return temperature*(1 + mixing_ratio_water_vapor/epsilon)/(1 + mixing_ratio_total_water)
+end
+
+function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50)
+    n_valid_levels = findfirst(>(ptop),p)
+    p = p[begin:n_valid_levels]
+    t = t[begin:n_valid_levels]
+    r = r[begin:n_valid_levels]
+    tvirtual_diff_parcel_env = similar(P)
+
+    parcel_sat_vapor_pressure = get_saturation_vapor_pressure(tparcel)
+    parcel_get_vapor_pressure = get_partial_vapor_pressure(rparcel,pparcel)
+    parcel_rh = min(parcel_sat_vapor_pressure / parcel_get_vapor_pressure, 1.0)
+    parcel_specific_entropy = get_specific_entropy(tparcel,rparcel,pparcel)
+    parcel_lcl = get_lifted_condensation_level(tparcel,parcel_rh,pparcel)
+
+    below_lcl = findall(>=(parcel_lcl),p)
+    above_lcl = findall(<(parcel_lcl),p)
+
+    #These two must populate buoyancy of lifted parcel_get_vapor_pressure
+    #this would be adiabatic lifting, easy enough
+    for level in below_lcl
+        tlifted = tparcel*(p[level]/pparcel)^(Dryair.R/Dryair.cp)
+        rlifted = rparcel
+        tvirtual_lifted = get_virtual_temperature(tlifted,rlifted,rlifted)
+        tvirtual_env = get_virtual_temperature(t[level],r[level],r[level])
+        tvirtual_diff_parcel_env[level] = tvirtual_lifted - tvirtual_env
+    end
+
+    #We start with environmental values of temperature, mixing ratio, entropy etc
+    for level in above_lvl
+        niter = 0
+        t_previousiter = t[level]
+        saturation_vapor_pressure_previousiter = get_saturation_vapor_pressure(tpreviousiter)
+        mixing_ratio_previousiter = get_mixing_ratio(env_saturation_vapor_pressure,p[level])
+        t_currentiter = 0.0
+        while !(abs(t_previousiter - t_currentiter))
+            niter += 1
+            t_currentiter = t_previousiter
+            saturation_vapor_pressure_currentiter = get_saturation_vapor_pressure(t_currentiter)
+            mixing_ratio_currentiter = get_mixing_ratio(saturation_vapor_pressure_currentiter,p[level])
+            dsdt = (Dryair.cp + rparcel*Liquidwater.cp + Liquidwater.lv*Liquidwater.lv*mixing_ratio_currentiter/
+            (Watervapor.R*t_currentiter*t_currentiter))/t_currentiter
+            vapor_pressure_currentiter = get_partial_vapor_pressure(mixing_ratio_currentiter,p[level])
+            entropy_currentinter = (Dryair.cp+rparcel*Liquidwater.cp)*log(t_currentiter) - 
+            Dryair.R*log(p[level]-vapor_pressure_currentiter) + Liquidwater.Lv*mixing_ratio_currentiter / t_currentiter
+
+            t_previousiter = t_currentiter + step*(parcel_specific_entropy - entropy_currentinter)/dsdt
+
+            if (NC > 500 ) | (vapor_pressure_currentiter > ( p[level] - 1.0) )
+                @info "Something went wrong"
+            end
+        end
+        tvirtual_lifted = get_virtual_temperature(t_currentiter,mixing_ratio_currentiter,mixing_ratio_currentiter)
+        tvirtual_env = get_virtual_temperature(t[level],r[level],r[level])
+        tvirtual_diff_parcel_env[level] = tvirtual_lifted - tvirtual_env
+    end
+    return tvirtual_diff_parcel_env
 end
