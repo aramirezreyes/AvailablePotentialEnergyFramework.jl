@@ -374,12 +374,12 @@ end
 """
     get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50)
 """
-function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50)
+function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50u"hPa")
     n_valid_levels = findfirst(<(ptop),p)
     p = p[begin:n_valid_levels]
     t = t[begin:n_valid_levels]
     r = r[begin:n_valid_levels]
-    tvirtual_diff_parcel_env = similar(p)
+    tvirtual_diff_parcel_env = similar(t)
     parcel_sat_vapor_pressure = get_saturation_vapor_pressure(tparcel)
     parcel_get_vapor_pressure = get_partial_vapor_pressure(rparcel,pparcel)
     parcel_rh = min(parcel_sat_vapor_pressure / parcel_get_vapor_pressure, 1.0)
@@ -405,9 +405,9 @@ function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50)
         t_previousiter = t[level]
         saturation_vapor_pressure_previousiter = get_saturation_vapor_pressure(t_previousiter)
         mixing_ratio_previousiter = get_mixing_ratio(saturation_vapor_pressure_previousiter,p[level])
-        t_currentiter = 0.0
-        mixing_ratio_currentiter = 0.0
-        while (abs(t_previousiter - t_currentiter) > 0.001 )
+        t_currentiter = 0.0u"K"
+        mixing_ratio_currentiter = 0.0u"g/g"
+        while (abs(t_previousiter - t_currentiter) > 0.001u"K" )
             niter += 1
             t_currentiter = t_previousiter
             saturation_vapor_pressure_currentiter = get_saturation_vapor_pressure(t_currentiter)
@@ -415,13 +415,13 @@ function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50)
             dsdt = (Dryair.cp + rparcel*Liquidwater.cp + Liquidwater.Lv*Liquidwater.Lv*mixing_ratio_currentiter/
             (Watervapor.R*t_currentiter*t_currentiter))/t_currentiter
             vapor_pressure_currentiter = get_partial_vapor_pressure(mixing_ratio_currentiter,p[level])
-            entropy_currentinter = (Dryair.cp+rparcel*Liquidwater.cp)*log(t_currentiter) - 
-            Dryair.R*log(p[level]-vapor_pressure_currentiter) + Liquidwater.Lv*mixing_ratio_currentiter / t_currentiter
+            entropy_currentinter = (Dryair.cp+rparcel*Liquidwater.cp)*log(t_currentiter/1u"K") - 
+            Dryair.R*log((p[level]-vapor_pressure_currentiter)/1u"hPa") + Liquidwater.Lv*mixing_ratio_currentiter / t_currentiter
 
             temperature_step = 0.3
             t_previousiter = t_currentiter + temperature_step*(parcel_specific_entropy - entropy_currentinter)/dsdt
 
-            if (niter > 500 ) | (vapor_pressure_currentiter > ( p[level] - 1.0) )
+            if (niter > 500 ) | (vapor_pressure_currentiter > ( p[level] - 1.0u"hPa") )
                 @info "Something went wrong"
             end
         end

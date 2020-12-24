@@ -35,12 +35,12 @@ end
     @test mixing_ratio_to_specific_humidity(specific_humidity_to_mixing_ratio(0.5)) ≈ 0.5
     @test unit(get_specific_entropy(300u"K",0.2,1000u"hPa"))== u"J/K/kg"
     pres = Dataset(joinpath(@__DIR__,"testfiles/thermoprofile.nc")) do ds 
-        variable(ds, "PRES")[:,:]
+        1u"hPa" .* variable(ds, "PRES")[:,:]
     end
     tabs = Dataset(joinpath(@__DIR__,"testfiles/thermoprofile.nc")) do ds 
-        variable(ds, "TABS")[:,:]
+        1u"K" .* variable(ds, "TABS")[:,:]
     end
-    qv = 1e-3 .* Dataset(joinpath(@__DIR__,"testfiles/thermoprofile.nc")) do ds 
+    qv = 1e-3u"kg/g" .* 1u"g/kg" .* Dataset(joinpath(@__DIR__,"testfiles/thermoprofile.nc")) do ds 
         variable(ds, "QV")[:,:] #was originally in g/kg
     end
     @info size(pres) size(qv) size(tabs)
@@ -52,9 +52,9 @@ end
 
     #I will create a similar profile but with a perturbation to see what happens
     tabs_unstable = copy(tabs)
-    tabs_unstable[2:40,:] .- 7.0
-    tabs_unstable[41:end,:] .+ 7.0
+    tabs_unstable[2:40,:] .- 7.0u"K"
+    tabs_unstable[41:end,:] .+ 7.0u"K"
 
-    @test_broken get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,tabs[:,timeindex],r[:,timeindex],pres[:,timeindex])
+    @test unit(get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,tabs[:,timeindex],r[:,timeindex],pres[:,timeindex])[1]) == u"K"
     @test_broken get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,tabs_unstable[:,timeindex],r[:,timeindex],pres[:,timeindex])
 end
