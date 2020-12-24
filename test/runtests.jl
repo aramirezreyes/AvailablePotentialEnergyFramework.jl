@@ -2,6 +2,7 @@ using AvailablePotentialEnergyFramework
 using Test
 using NCDatasets: Dataset, variable
 using Statistics: mean
+using Unitful: @u_str, unit
 
 # @test integrate_vertically(1:10,dz=2) == 110
 # @test integrate_vertically(1:10,dz=2,weight=2) == 220

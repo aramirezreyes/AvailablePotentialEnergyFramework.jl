@@ -1,6 +1,5 @@
-const R             = 287 # Ideal gas constants
 const epsilon       = 18.016/28.966
-const g             = 10 #acceleration of gravity
+const g             = 10u"m/s/s" #acceleration of gravity
 
 @with_kw struct Substance
     cp = nothing
@@ -12,17 +11,17 @@ end
 
 
 Dryair = Substance(
-    cp = 1006 ,#J/kg/k at 1013 hPa
-    cv = 718,
-    R  = 287.05 # J/kg/k
+    cp = 1006u"J/kg/K" ,#J/kg/k at 1013 hPa
+    cv = 718u"J/kg/K",
+    R  = 287.05u"J/kg/K" # J/kg/k
 )
 
 Liquidwater = Substance(
-     Lv = 2.5e6, #J/kg
-     Lf = 3.33e5,
-     cp = 4200 #j/kg/k
+     Lv = 2.5e6u"J/kg", #J/kg
+     Lf = 3.33e5u"J/kg",
+     cp = 4200u"J/kg/K" #j/kg/k
 )
 
 Watervapor = Substance(
-    R = 461.52 #j/kg/K
+    R = 461.52u"J/kg/K" #j/kg/K
 )

@@ -21,13 +21,13 @@ as_ints(a::AbstractArray{CartesianIndex{L}}) where L = reshape(reinterpret(Int, 
 Take a (1,1,size(z),size(t)) profile of temperature or virtual temperature and return the Brunt - Väisälä frequency at each z level and at each t.
 """
 function compute_N2(xBar_Tv,z)
-    T = eltype(xBar_Tv)
+    T = typeof(g/z[1])
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     factor = g/Dryair.cp
-    @views  N2[1:end-1,:]  .= (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1])
-    @views  @. N2  = g * (N2 + factor)/xBar_Tv[1,1,:,:]
+    @views  N2[1:end-1,:]  .= g * ( (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1]) .+ factor)./xBar_Tv[1,1,1:end-1,:]
+    #@views  @. N2  = g * (N2 + factor)/xBar_Tv[1,1,:,:]
     @views  N2[end,:]      .= N2[end-1,:]
-        bb1 = as_ints(findall(abs.(N2) .< 1e-6))
+        bb1 = as_ints(findall(abs.(N2) .< 1e-6*unit(N2[1]) ))
         @views bb = bb1[1,:]
         @views cc = bb1[2,:]   
     @inbounds for i in 1:length(bb)
@@ -303,7 +303,7 @@ end
 Receive temperature T in Kelvin and compute the saturation vapor pressure in hPa from the August-Roche-Magnus formula that approximates the solution to the Clausius-Clapeyron relationship (Wikipedia contributors. (2020, December 19). Clausius–Clapeyron relation. In Wikipedia, The Free Encyclopedia. Retrieved 06:57, December 20, 2020, from https://en.wikipedia.org/w/index.php?title=Clausius%E2%80%93Clapeyron_relation&oldid=995159175)
 """
 function get_saturation_vapor_pressure(T)
-    return 6.112*exp(17.67 * (T-273.15) / (243.5 + (T - 273.15)))
+    return 6.112u"hPa"*exp(17.67 * (T-273.15u"K") / (243.5u"K" + (T - 273.15u"K")))
 end
 
 """
@@ -331,7 +331,7 @@ function get_specific_entropy(temperature,mixing_ratio,pressure)
     saturation_vapor_pressure = get_saturation_vapor_pressure(temperature)
     RH = min(vapor_pressure/saturation_vapor_pressure,1.0)
     specific_entropy =  (Dryair.cp + mixing_ratio * Liquidwater.cp) *
-        log(temperature) - Dryair.R * log(pressure - vapor_pressure) +
+        log(temperature/unit(temperature)) - Dryair.R * log((pressure - vapor_pressure)/unit(pressure)) +
         Liquidwater.Lv * mixing_ratio / temperature - mixing_ratio * Watervapor.R * log(RH)
 end 
 
@@ -340,7 +340,7 @@ end
 Receive temperature in Kelvin, relative humidity (unitless) and pressure (hPa) and compute the lifted condensation level based on Emanuel's E94 "calcsound.f" code at http://texmex.mit.edu/pub/emanuel/BOOK/
 """
 function get_lifted_condensation_level(temperature,relative_humidity,pressure) 
-    return pressure * (relative_humidity^(temperature/(1669.0-122.0*relative_humidity-temperature)))
+    return pressure * (relative_humidity^(temperature/(1669.0u"K"-122.0u"K"*relative_humidity-temperature)))
 end
 #we need temperature to celsius
 #saturation vapor pressure
