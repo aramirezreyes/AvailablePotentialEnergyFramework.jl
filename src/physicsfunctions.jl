@@ -381,8 +381,8 @@ function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50u"hP
     r = r[begin:n_valid_levels]
     tvirtual_diff_parcel_env = similar(t)
     parcel_sat_vapor_pressure = get_saturation_vapor_pressure(tparcel)
-    parcel_get_vapor_pressure = get_partial_vapor_pressure(rparcel,pparcel)
-    parcel_rh = min(parcel_get_vapor_pressure/parcel_sat_vapor_pressure  , 1.0)
+    parcel_vapor_pressure = get_partial_vapor_pressure(rparcel,pparcel)
+    parcel_rh = min(parcel_vapor_pressure/parcel_sat_vapor_pressure  , 1.0)
     parcel_specific_entropy = get_specific_entropy(tparcel,rparcel,pparcel)
     parcel_lcl = get_lifted_condensation_level(tparcel,parcel_rh,pparcel)
 
@@ -415,17 +415,17 @@ function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50u"hP
             dsdt = (Dryair.cp + rparcel*Liquidwater.cp + Liquidwater.Lv*Liquidwater.Lv*mixing_ratio_currentiter/
             (Watervapor.R*t_currentiter*t_currentiter))/t_currentiter
             vapor_pressure_currentiter = get_partial_vapor_pressure(mixing_ratio_currentiter,p[level])
-            entropy_currentinter = (Dryair.cp+rparcel*Liquidwater.cp)*log(t_currentiter/1u"K") - 
-            Dryair.R*log((p[level]-vapor_pressure_currentiter)/1u"hPa") + Liquidwater.Lv*mixing_ratio_currentiter / t_currentiter
+            entropy_currentinter = (Dryair.cp+rparcel*Liquidwater.cp)*log(t_currentiter/unit(t_currentiter)) - 
+            Dryair.R*log((p[level]-vapor_pressure_currentiter)/unit(p[level])) + Liquidwater.Lv*mixing_ratio_currentiter / t_currentiter
 
             temperature_step = 0.3
             t_previousiter = t_currentiter + temperature_step*(parcel_specific_entropy - entropy_currentinter)/dsdt
 
             if (niter > 500 ) | (vapor_pressure_currentiter > ( p[level] - 1.0u"hPa") )
-                @info "Something went wrong"
+                error("Temperature didn't converge during lift")
             end
         end
-        tvirtual_lifted = get_virtual_temperature(t_currentiter,mixing_ratio_currentiter,mixing_ratio_currentiter)
+        tvirtual_lifted = get_virtual_temperature(t_currentiter,rparcel,mixing_ratio_currentiter)
         tvirtual_env = get_virtual_temperature(t[level],r[level],r[level])
         tvirtual_diff_parcel_env[level] = tvirtual_lifted - tvirtual_env
     end
