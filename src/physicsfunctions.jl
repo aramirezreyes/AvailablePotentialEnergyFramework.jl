@@ -382,7 +382,7 @@ function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50u"hP
     tvirtual_diff_parcel_env = similar(t)
     parcel_sat_vapor_pressure = get_saturation_vapor_pressure(tparcel)
     parcel_get_vapor_pressure = get_partial_vapor_pressure(rparcel,pparcel)
-    parcel_rh = min(parcel_sat_vapor_pressure / parcel_get_vapor_pressure, 1.0)
+    parcel_rh = min(parcel_get_vapor_pressure/parcel_sat_vapor_pressure  , 1.0)
     parcel_specific_entropy = get_specific_entropy(tparcel,rparcel,pparcel)
     parcel_lcl = get_lifted_condensation_level(tparcel,parcel_rh,pparcel)
 
