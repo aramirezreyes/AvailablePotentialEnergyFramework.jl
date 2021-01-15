@@ -385,7 +385,7 @@ function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50u"hP
     parcel_rh = min(parcel_vapor_pressure/parcel_sat_vapor_pressure  , 1.0)
     parcel_specific_entropy = get_specific_entropy(tparcel,rparcel,pparcel)
     parcel_lcl = get_lifted_condensation_level(tparcel,parcel_rh,pparcel)
-
+    @show parcel_lcl
     below_lcl = findall(>=(parcel_lcl),p)
     above_lcl = findall(<(parcel_lcl),p)
 
@@ -418,7 +418,11 @@ function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50u"hP
             entropy_currentinter = (Dryair.cp+rparcel*Liquidwater.cp)*log(t_currentiter/unit(t_currentiter)) - 
             Dryair.R*log((p[level]-vapor_pressure_currentiter)/unit(p[level])) + Liquidwater.Lv*mixing_ratio_currentiter / t_currentiter
 
-            temperature_step = 0.3
+            if niter < 3
+                temperature_step = 0.3
+            else
+                temperature_step = 1
+            end
             t_previousiter = t_currentiter + temperature_step*(parcel_specific_entropy - entropy_currentinter)/dsdt
 
             if (niter > 500 ) | (vapor_pressure_currentiter > ( p[level] - 1.0u"hPa") )
