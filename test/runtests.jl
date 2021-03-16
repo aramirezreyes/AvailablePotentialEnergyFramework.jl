@@ -2,7 +2,7 @@ using AvailablePotentialEnergyFramework
 using Test
 using NCDatasets: Dataset, variable
 using Statistics: mean
-using Unitful: @u_str, unit
+using Unitful: @u_str, unit, ustrip, Quantity
 
 # @test integrate_vertically(1:10,dz=2) == 110
 # @test integrate_vertically(1:10,dz=2,weight=2) == 220
@@ -17,6 +17,8 @@ using Unitful: @u_str, unit
     include("compositehelperfunctions.jl")
     include("physicsfunctions.jl")
     include("useful_diagnostics.jl")
+    include("apebudgets.jl")
+#    include("ape_computation_from_julia_output.jl")
     #include("arrayfiltering.jl")
 
 end

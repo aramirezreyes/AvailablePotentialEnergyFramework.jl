@@ -68,11 +68,11 @@ Float_type = Float32
     kx           = length(x)                            # # of horizonal grid points
     ky           = length(y)                            # # of horizonal grid points
     @.  RAD      = RAD/day                              # K/s #Heating rate per second;
-    @.  Tv       = (1 + 1e-3*epsilon*Tv)*T              # Virtual temperature
+    @.  Tv       = get_virtual_temperature.(T,Tv)#(1 + 1e-3*epsilon*Tv)*T              # Virtual temperature
     @.  P0       = P0*1e2
     PP          .= PP .+ reshape(P0,(1,1,kz,1))
     #ThetaV      .= Tv.*(PP./reshape(P0,(1,1,kz,1))).^c1 # Virtual potential temp
-    ThetaV      .= Tv.*(PP/P0[1]).^c1 # Virtual potential temp
+    ThetaV      .= get_potential_temperature(Tv,PP,P0[1]) #Tv.*(PP/P0[1]).^c1 # Virtual potential temp
     mean!(xBar_Pt,PP)                                     
     mean!(xBar_Tv,Tv)              
     mean!(xBar_ThetaV,ThetaV)   
@@ -342,22 +342,7 @@ function testAPEBudget_distributed()
 
  
 
-    jldopen(string(ENV["TMPDIR"],"/outputfile.jld"), "w") do file
-        write(file,"int_APE",int_APE)
-        write(file,"int_KE",int_KE)
-        write(file,"int_RAD",int_APE_RAD)
-        write(file,"int_DIA",int_APE_DIA)
-        write(file,"int_WN2",int_APE_WN2)
-        write(file,"int_Ub2",int_APE_Ub2)
-        write(file,"int_Vb2",int_APE_Vb2)
-        write(file,"int_APE_rate",int_APE_rate)
-        write(file,"APE_Fs",xBar_APE_Fs)
-        write(file,"convec_heating_anomaly",Diabatic_other)
-        write(file,"rad_heating_anomaly",RAD)
-        write(file,"buoyancy_anomaly",B)
-        write(file,"radiative_ape_production",dia_ape)
-        write(file,"convective_ape_production",rad_ape)
-    end
+   
     
     # plot([int_APE_rate,
 #     int_APE_Ub2,
@@ -367,8 +352,10 @@ function testAPEBudget_distributed()
 #     int_APE_DIA,
 #     xBar_APE_Fs],label=["rate" "advu" "advv" "wn2" "rad" "dia" "fs" ])
 # plot!(residual,lw=4,label="residual")
-
+    return true
 end
+
+@test  testAPEBudget_distributed()
 
 """ 
      run_distributed_test()
