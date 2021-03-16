@@ -21,6 +21,28 @@ as_ints(a::AbstractArray{CartesianIndex{L}}) where L = reshape(reinterpret(Int, 
 Take a (1,1,size(z),size(t)) profile of temperature or virtual temperature and return the Brunt - Väisälä frequency at each z level and at each t.
 """
 function compute_N2(xBar_Tv,z)
+    T = typeof(ustrip(g)/z[1])
+    N2 = zeros(T,length(z),size(xBar_Tv,4))
+    factor = ustrip(g/Dryair.cp)
+    @views  N2[1:end-1,:]  .= ustrip(g) * ( (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1]) .+ factor)./xBar_Tv[1,1,1:end-1,:]
+    #@views  @. N2  = g * (N2 + factor)/xBar_Tv[1,1,:,:]
+    @views  N2[end,:]      .= N2[end-1,:]
+        bb1 = as_ints(findall(abs.(N2) .< 1e-6 ))
+        @views bb = bb1[1,:]
+        @views cc = bb1[2,:]   
+    @inbounds for i in 1:length(bb)
+        if 1 < bb[i] < size(z)[1]
+           N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
+        elseif bb[i] == 1
+           N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
+        elseif bb[i] == size(z)[1]
+            N2[bb[i],cc[i]] = N2[bb[i] - 1,cc[i]]
+        end
+    end
+    return N2
+end
+
+function compute_N2(xBar_Tv :: Array{ <:Quantity }, z :: Array{ <:Quantity })
     T = typeof(g/z[1])
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     factor = g/Dryair.cp
@@ -41,6 +63,7 @@ function compute_N2(xBar_Tv,z)
     end
     return N2
 end
+
 """
     compute_N2_attempt(xBar_Tv,z)
 Take a (1,1,size(z),size(t)) profile of temperature or virtual temperature and return the Brunt - Väisälä frequency at each z level and at each t. Tried doing it faster that the other function but have not been succesful.
@@ -303,6 +326,10 @@ end
 Receive temperature T in Kelvin and compute the saturation vapor pressure in hPa from the August-Roche-Magnus formula that approximates the solution to the Clausius-Clapeyron relationship (Wikipedia contributors. (2020, December 19). Clausius–Clapeyron relation. In Wikipedia, The Free Encyclopedia. Retrieved 06:57, December 20, 2020, from https://en.wikipedia.org/w/index.php?title=Clausius%E2%80%93Clapeyron_relation&oldid=995159175)
 """
 function get_saturation_vapor_pressure(T)
+    return 6.112*exp(17.67 * (T-273.15) / (243.5 + (T - 273.15)))
+end
+
+function get_saturation_vapor_pressure(T :: Quantity)
     return 6.112u"hPa"*exp(17.67 * (T-273.15u"K") / (243.5u"K" + (T - 273.15u"K")))
 end
 
@@ -340,6 +367,10 @@ end
 Receive temperature in Kelvin, relative humidity (unitless) and pressure (hPa) and compute the lifted condensation level based on Emanuel's E94 "calcsound.f" code at http://texmex.mit.edu/pub/emanuel/BOOK/
 """
 function get_lifted_condensation_level(temperature,relative_humidity,pressure) 
+    return pressure * (relative_humidity^(temperature/(1669.0-122.0*relative_humidity-temperature)))
+end
+
+function get_lifted_condensation_level(temperature :: Quantity ,relative_humidity :: Quantity ,pressure :: Quantity) 
     return pressure * (relative_humidity^(temperature/(1669.0u"K"-122.0u"K"*relative_humidity-temperature)))
 end
 #we need temperature to celsius
@@ -434,4 +465,30 @@ function get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,t,r,p,ptop=50u"hP
         tvirtual_diff_parcel_env[level] = tvirtual_lifted - tvirtual_env
     end
     return tvirtual_diff_parcel_env
+end
+
+"""
+    get_potential_temperature(temperature, pressure, reference_pressure)
+Compute potential temperature from temperature and pressure.
+"""
+function get_potential_temperature(temperature, pressure, reference_pressure)
+    exponent = ustrip(Dryair.R / Dryair.cp)
+    return temperature * (reference_pressure/pressure)^exponent
+end
+
+function get_potential_temperature(temperature :: Quantity, pressure :: Quantity, reference_pressure :: Quantity)
+    exponent = Dryair.R / Dryair.cp
+    return temperature * (reference_pressure/pressure)^exponent
+end
+
+"""
+    get_virtual_temperature(temperature, specific_humidity)
+Compute virtual temperature from temperature and specific humidity.
+"""
+function get_virtual_temperature(temperature, specific_humidity)
+    return (one(temperature) + 1e-3*epsilon*specific_humidity)*temperature
+end
+
+function get_virtual_temperature(temperature :: Quantity, specific_humidity :: Quantity)
+    return (one(temperature) + 1e-3*epsilon*specific_humidity)*temperature
 end

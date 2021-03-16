@@ -5,8 +5,10 @@
     Γstable = Γneutral - 10e-3u"K/m"
     Γunstable = Γneutral + 10e-3u"K/m"
 
+
     z = 1u"m" .* collect(0:50:10e3)
-    tvprofile(Γ,z) = reshape(repeat(300u"K" .- Γ*z,1,2),1,1,length(z),2)
+    tvprofile(Γ,z) = reshape(repeat(300 .- Γ*z,1,2),1,1,length(z),2)
+    tvprofile(Γ :: Quantity, z :: Array{ <: Quantity}) = reshape(repeat(300u"K" .- Γ*z,1,2),1,1,length(z),2)
 
     function plot_N2(Γ,z)
         tv_profile = tvprofile(Γ,z)
@@ -21,6 +23,12 @@
 
     @test all(compute_N2(tvprofile(Γstable,z),z) .> 0u"1/s/s" )
 
+    @test isapprox(  zeros(length(z),2),compute_N2(tvprofile(ustrip(Γneutral),ustrip.(z)),ustrip.(z)), atol=1e-10)
+
+    @test all(compute_N2(tvprofile(ustrip(Γunstable),ustrip.(z)),ustrip.(z)) .< 0 )
+
+    @test all(compute_N2(tvprofile(ustrip(Γstable),ustrip.(z)),ustrip.(z)) .> 0 )
+
 end
 
 @testset "Thermodynamics" begin
@@ -34,6 +42,28 @@ end
     @test specific_humidity_to_mixing_ratio(mixing_ratio_to_specific_humidity(0.5)) ≈ 0.5
     @test mixing_ratio_to_specific_humidity(specific_humidity_to_mixing_ratio(0.5)) ≈ 0.5
     @test unit(get_specific_entropy(300u"K",0.2,1000u"hPa"))== u"J/K/kg"
+    @test get_potential_temperature(300u"K",1000u"hPa",1000u"hPa") == 300u"K"
+    @test get_potential_temperature(300u"K",1010u"hPa",1000u"hPa") < 300u"K"
+    @test get_potential_temperature(300u"K",900u"hPa",1000u"hPa") > 300u"K"
+    @test get_virtual_temperature(300u"K",0u"g/kg") == 300u"K"
+    @test get_virtual_temperature(300u"K",0u"g/kg") == 300u"K"
+    @test get_virtual_temperature(300u"K",10u"g/kg") > 300u"K"
+    # No units
+
+    @test get_saturation_vapor_pressure(273.15) == 6.112
+    @test get_partial_vapor_pressure(0,1000) == 0
+    @test get_partial_vapor_pressure(1,1000) == 1000/(18.016/28.966 + 1.0)
+    @test get_mixing_ratio(0,1000) == 0
+    @test get_potential_temperature(300,1000,1000) == 300
+    @test get_potential_temperature(300,1010,1000) < 300
+    @test get_potential_temperature(300,900,1000) > 300
+    @test get_virtual_temperature(300,0) == 300
+    @test get_virtual_temperature(300,0) == 300
+    @test get_virtual_temperature(300,10) > 300
+ 
+
+    
+    
     pres = Dataset(joinpath(@__DIR__,"testfiles/thermoprofile.nc")) do ds 
         1u"hPa" .* variable(ds, "PRES")[:,:]
     end
@@ -55,6 +85,6 @@ end
     tabs_unstable[2:40,:] .- 7.0u"K"
     tabs_unstable[41:end,:] .+ 7.0u"K"
 
-    @test unit(get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,tabs[:,timeindex],r[:,timeindex],pres[:,timeindex])[1]) == u"K"
+    @test_broken unit(get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,tabs[:,timeindex],r[:,timeindex],pres[:,timeindex])[1]) == u"K"
     @test_broken get_buoyancy_of_lifted_parcel(tparcel,rparcel,pparcel,tabs_unstable[:,timeindex],r[:,timeindex],pres[:,timeindex])
 end
