@@ -19,7 +19,7 @@ using OffsetArrays: OffsetArray
 using SparseArrays: SparseMatrixCSC
 using Statistics: mean, median!, mean!
 using Parameters: @with_kw
-using Unitful: @u_str, unit
+using Unitful: @u_str, unit, ustrip, Quantity
 
 
 
@@ -78,6 +78,8 @@ export
     get_virtual_temperature,
     get_lifted_condensation_level,
     get_specific_entropy,
+    get_potential_temperature,
+    get_virtual_temperature,
     mixing_ratio_to_specific_humidity,
     specific_humidity_to_mixing_ratio,
     get_buoyancy_of_lifted_parcel,
