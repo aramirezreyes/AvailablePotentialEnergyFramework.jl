@@ -492,3 +492,35 @@ end
 function get_virtual_temperature(temperature :: Quantity, specific_humidity :: Quantity)
     return (one(temperature) + 1e-3*epsilon*specific_humidity)*temperature
 end
+
+"""
+   function surface_sensible_heat_flux_to_buoyancy(SST , sensible_heat_flux ; rho = 1)
+Convert surface energy fluxes in units of W/m^2 to units of buoyancy m^2/s^3).
+"""
+function surface_sensible_heat_flux_to_buoyancy(SST, sensible_heat_flux; rho = 1.0)
+    return ustrip(g) /(ustrip(Dryair.cp)*SST) * sensible_heat_flux
+end
+
+function surface_sensible_heat_flux_to_buoyancy(SST :: Quantity, sensible_heat_flux :: Quantity; rho = 1u"kg/m^3")
+    return g /(1u"kg/m^3"*Dryair.cp*SST) * sensible_heat_flux
+end
+
+"""
+   function surface_latent_heat_flux_to_buoyancy(SST , sensible_heat_flux ; rho = 1)
+Convert surface energy fluxes in units of W/m^2 to units of buoyancy m^2/s^3).
+"""
+function surface_latent_heat_flux_to_buoyancy(SST, latent_heat_flux; rho = 1.0)
+    return ustrip(g)/(1*ustrip(Dryair.cp)*SST)*(epsilon*ustrip(Dryair.cp)*SST/ustrip(Liquidwater.Lv)*latent_heat_flux) 
+end
+
+function surface_latent_heat_flux_to_buoyancy(SST :: Quantity, latent_heat_flux :: Quantity; rho = 1u"kg/m^3")
+    return g/(1u"kg/m^3"*Dryair.cp*SST)*(epsilon*Dryair.cp*SST/Liquidwater.Lv*latent_heat_flux) 
+end
+
+function get_buoyancy(temperature_anomaly,mean_temperature) 
+    return ustrip(g) * ustrip(temperature_anomaly)/ustrip(mean_temperature)
+end
+
+function get_buoyancy(temperature_anomaly :: Quantity ,mean_temperature :: Quantity)
+    return g * temperature_anomaly/mean_temperature
+end

@@ -48,6 +48,8 @@ end
     @test get_virtual_temperature(300u"K",0u"g/kg") == 300u"K"
     @test get_virtual_temperature(300u"K",0u"g/kg") == 300u"K"
     @test get_virtual_temperature(300u"K",10u"g/kg") > 300u"K"
+    @test 1unit(surface_sensible_heat_flux_to_buoyancy(300u"K", 100u"W/m^2")) == 1unit(g)/u"s"*u"m"
+    @test 1unit(surface_latent_heat_flux_to_buoyancy(300u"K", 100u"W/m^2")) == 1unit(g)/u"s"*u"m"
     # No units
 
     @test get_saturation_vapor_pressure(273.15) == 6.112
@@ -60,7 +62,8 @@ end
     @test get_virtual_temperature(300,0) == 300
     @test get_virtual_temperature(300,0) == 300
     @test get_virtual_temperature(300,10) > 300
- 
+    @test ustrip(surface_sensible_heat_flux_to_buoyancy(300u"K", 100u"W/m^2")) ==  surface_sensible_heat_flux_to_buoyancy(300, 100)
+    @test ustrip(surface_latent_heat_flux_to_buoyancy(300u"K", 100u"W/m^2")) ==  surface_latent_heat_flux_to_buoyancy(300, 100)
 
     
     
