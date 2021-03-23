@@ -50,6 +50,8 @@ end
     @test get_virtual_temperature(300u"K",10u"g/kg") > 300u"K"
     @test 1unit(surface_sensible_heat_flux_to_buoyancy(300u"K", 100u"W/m^2")) == 1unit(g)/u"s"*u"m"
     @test 1unit(surface_latent_heat_flux_to_buoyancy(300u"K", 100u"W/m^2")) == 1unit(g)/u"s"*u"m"
+    @test 1unit(get_buoyancy(0.5u"K",10.5u"K")) == 1unit(g)
+    @test 1unit(radiative_heating_rate_to_buoyancy(10u"K",5u"K/s")) == 1u"m/s^2/s"
     # No units
 
     @test get_saturation_vapor_pressure(273.15) == 6.112
@@ -64,8 +66,8 @@ end
     @test get_virtual_temperature(300,10) > 300
     @test ustrip(surface_sensible_heat_flux_to_buoyancy(300u"K", 100u"W/m^2")) ==  surface_sensible_heat_flux_to_buoyancy(300, 100)
     @test ustrip(surface_latent_heat_flux_to_buoyancy(300u"K", 100u"W/m^2")) ==  surface_latent_heat_flux_to_buoyancy(300, 100)
-
-    
+    @test ustrip(get_buoyancy(0.5u"K",10.5u"K")) == get_buoyancy(0.5,10.5)
+    @test ustrip(radiative_heating_rate_to_buoyancy(10u"K",5u"K/s")) == ustrip(radiative_heating_rate_to_buoyancy(10,5))
     
     pres = Dataset(joinpath(@__DIR__,"testfiles/thermoprofile.nc")) do ds 
         1u"hPa" .* variable(ds, "PRES")[:,:]

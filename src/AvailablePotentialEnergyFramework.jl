@@ -84,6 +84,8 @@ export
     get_buoyancy_of_lifted_parcel,
     surface_sensible_heat_flux_to_buoyancy,
     surface_latent_heat_flux_to_buoyancy,
+    get_buoyancy,
+    radiative_heating_rate_to_buoyancy,
     #math functions
     integrate_vertically,
     average_precipitation_per_pw_bin,

@@ -32,7 +32,7 @@ function compute_N2(xBar_Tv,z)
         @views cc = bb1[2,:]   
     @inbounds for i in 1:length(bb)
         if 1 < bb[i] < size(z)[1]
-           N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
+           N2[bb[i],cc[i]] = (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) / 2# If N2 is small, substite by mean of neighbours
         elseif bb[i] == 1
            N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
         elseif bb[i] == size(z)[1]
@@ -54,7 +54,7 @@ function compute_N2(xBar_Tv :: Array{ <:Quantity }, z :: Array{ <:Quantity })
         @views cc = bb1[2,:]   
     @inbounds for i in 1:length(bb)
         if 1 < bb[i] < size(z)[1]
-           N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
+           N2[bb[i],cc[i]] = (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) / 2# If N2 is small, substite by mean of neighbours
         elseif bb[i] == 1
            N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
         elseif bb[i] == size(z)[1]
@@ -486,11 +486,11 @@ end
 Compute virtual temperature from temperature and specific humidity.
 """
 function get_virtual_temperature(temperature, specific_humidity)
-    return (one(temperature) + 1e-3*epsilon*specific_humidity)*temperature
+    return (one(temperature) + one(temperature)/1000*epsilon*specific_humidity)*temperature
 end
 
 function get_virtual_temperature(temperature :: Quantity, specific_humidity :: Quantity)
-    return (one(temperature) + 1e-3*epsilon*specific_humidity)*temperature
+    return (one(temperature) + one(temperature)/1000*epsilon*specific_humidity)*temperature
 end
 
 """
@@ -510,7 +510,7 @@ end
 Convert surface energy fluxes in units of W/m^2 to units of buoyancy m^2/s^3).
 """
 function surface_latent_heat_flux_to_buoyancy(SST, latent_heat_flux; rho = 1.0)
-    return ustrip(g)/(1*ustrip(Dryair.cp)*SST)*(epsilon*ustrip(Dryair.cp)*SST/ustrip(Liquidwater.Lv)*latent_heat_flux) 
+    return ustrip(g)/(one(SST)*ustrip(Dryair.cp)*SST)*(epsilon*ustrip(Dryair.cp)*SST/ustrip(Liquidwater.Lv)*latent_heat_flux) 
 end
 
 function surface_latent_heat_flux_to_buoyancy(SST :: Quantity, latent_heat_flux :: Quantity; rho = 1u"kg/m^3")
@@ -523,4 +523,12 @@ end
 
 function get_buoyancy(temperature_anomaly :: Quantity ,mean_temperature :: Quantity)
     return g * temperature_anomaly/mean_temperature
+end
+
+function radiative_heating_rate_to_buoyancy(mean_temperature,radiative_heating_rate)
+    return ustrip(g) * radiative_heating_rate / mean_temperature
+end
+
+function radiative_heating_rate_to_buoyancy(mean_temperature :: Quantity,radiative_heating_rate :: Quantity)
+    return g * radiative_heating_rate / mean_temperature
 end
