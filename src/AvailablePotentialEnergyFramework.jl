@@ -86,6 +86,7 @@ export
     surface_latent_heat_flux_to_buoyancy,
     get_buoyancy,
     radiative_heating_rate_to_buoyancy,
+    get_density_ideal_gas,
     #math functions
     integrate_vertically,
     average_precipitation_per_pw_bin,

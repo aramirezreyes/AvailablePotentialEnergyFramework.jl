@@ -32,7 +32,7 @@ function compute_N2(xBar_Tv,z)
         @views cc = bb1[2,:]   
     @inbounds for i in 1:length(bb)
         if 1 < bb[i] < size(z)[1]
-           N2[bb[i],cc[i]] = (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) / 2# If N2 is small, substite by mean of neighbours
+           N2[bb[i],cc[i]] =  (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]])/2 # If N2 is small, substite by mean of neighbours
         elseif bb[i] == 1
            N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
         elseif bb[i] == size(z)[1]
@@ -54,7 +54,7 @@ function compute_N2(xBar_Tv :: Array{ <:Quantity }, z :: Array{ <:Quantity })
         @views cc = bb1[2,:]   
     @inbounds for i in 1:length(bb)
         if 1 < bb[i] < size(z)[1]
-           N2[bb[i],cc[i]] = (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) / 2# If N2 is small, substite by mean of neighbours
+           N2[bb[i],cc[i]] =  (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]])/2# If N2 is small, substite by mean of neighbours
         elseif bb[i] == 1
            N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
         elseif bb[i] == size(z)[1]
@@ -531,4 +531,12 @@ end
 
 function radiative_heating_rate_to_buoyancy(mean_temperature :: Quantity,radiative_heating_rate :: Quantity)
     return g * radiative_heating_rate / mean_temperature
+end
+
+function get_density_ideal_gas(pressure, temperature)
+    return pressure / temperature / eltype(temperature)(ustrip(Dryair.R))
+end
+
+function get_density_ideal_gas(pressure :: Quantity, temperature :: Quantity)
+    return pressure / temperature / Dryair.R
 end

@@ -62,10 +62,9 @@ xBar_APE_DIA     = mean(Diabatic_other.*B,dims=(1,2))[1,1,:,:]./N2;
 
 # interpolation 
 k_up              = argmin(abs.(z.-z_up));
-    z1                = z[1]:dz:z[k_up];
-    @info z1
+z1                = z[1]:dz:z[k_up];
+@info z1
 rho01 = zeros(length(z1),length(t))
-rho02 = zeros(length(z1),length(t))
 xBar_APE_b21 = similar(rho01)
 xBar_APE_RAD1 = similar(rho01)
 xBar_APE_DIA1 = similar(rho01)

@@ -9,7 +9,7 @@
     z = range(0.0,stop=50.0,length = sz)
     t = range(0.0,stop=50.0,length = st)
     test_brunt = 1e-4*ones(sz,st)
-    test_rho = ones(sz,st)
+    test_rho = ones(1,1,sz,st)
     test_surface = zeros(sx,sy,st)
     dx = dy = x[2] - x[1]
     dz = z[2] - z[1]
