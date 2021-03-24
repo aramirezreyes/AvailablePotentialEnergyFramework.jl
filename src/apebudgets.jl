@@ -325,7 +325,7 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     int_APE_Vb2   = zeros(T,lt)
     int_APE_rate  = zeros(T,lt)
     @inbounds for time in 1:lt
-        rho01_itp         =  interpolate((z,), rho0[:,time],Gridded(Linear()))
+        rho01_itp         =  interpolate((z,), rho0[1,1,:,time],Gridded(Linear()))
         xBar_APE_b21_itp  =  interpolate((z,), APE_b2[1,1,:,time],Gridded(Linear()))
         xBar_APE_RAD1_itp =  interpolate((z,), xBar_APE_RAD[1,1,:,time],Gridded(Linear()))
         xBar_APE_DIA1_itp =  interpolate((z,), xBar_APE_DIA[1,1,:,time],Gridded(Linear()))
