@@ -9,12 +9,6 @@ function distance(x1,x2,gridspacing :: Number,weight=1)
     return gridspacing*hypot( x2[1]-x1[1], x2[2]-x1[2] )
 end
 
-"""
-    as_ints(a::AbstractArray{CartesianIndex{L}}) where L
-Take an array of cartesian indices and transforms it to an array of integers
-"""
-as_ints(a::AbstractArray{CartesianIndex{L}}) where L = reshape(reinterpret(Int, a), (L, size(a)...))
-
 
 """
     compute_N2(xBar_Tv,z)
@@ -24,19 +18,17 @@ function compute_N2(xBar_Tv,z)
     T = typeof(ustrip(g)/z[1])
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     factor = ustrip(g/Dryair.cp)
-    @views  N2[1:end-1,:]  .= ustrip(g) * ( (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1]) .+ factor)./xBar_Tv[1,1,1:end-1,:]
-    #@views  @. N2  = g * (N2 + factor)/xBar_Tv[1,1,:,:]
+    @views  N2[1:end-1,:]  .= ustrip(g) .* ( (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1]) .+ factor)./xBar_Tv[1,1,1:end-1,:]
     @views  N2[end,:]      .= N2[end-1,:]
-        bb1 = as_ints(findall(abs.(N2) .< 1e-6 ))
-        @views bb = bb1[1,:]
-        @views cc = bb1[2,:]   
-    @inbounds for i in 1:length(bb)
-        if 1 < bb[i] < size(z)[1]
-           N2[bb[i],cc[i]] =  (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]])/2 # If N2 is small, substite by mean of neighbours
-        elseif bb[i] == 1
-           N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
-        elseif bb[i] == size(z)[1]
-            N2[bb[i],cc[i]] = N2[bb[i] - 1,cc[i]]
+    ind_smallN2 = findall(abs.(N2) .< 1e-6)
+    one_z = CartesianIndex(1,0)
+    @inbounds for ind in ind_smallN2
+        if 1 < ind[1] < length(z)
+           N2[ind] =  (N2[ind + one_z] + N2[ind - one_z])/2 # If N2 is small, substite by mean of neighbours
+        elseif ind[1] == 1
+           N2[ind] = N2[ind + one_z]
+        elseif ind[1] == length(z)
+            N2[ind] = N2[ind - one_z]
         end
     end
     return N2
@@ -46,59 +38,21 @@ function compute_N2(xBar_Tv :: Array{ <:Quantity }, z :: Array{ <:Quantity })
     T = typeof(g/z[1])
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     factor = g/Dryair.cp
-    @views  N2[1:end-1,:]  .= g * ( (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1]) .+ factor)./xBar_Tv[1,1,1:end-1,:]
-    #@views  @. N2  = g * (N2 + factor)/xBar_Tv[1,1,:,:]
+    @views  N2[1:end-1,:]  .= g .* ( (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1]) .+ factor)./xBar_Tv[1,1,1:end-1,:]
     @views  N2[end,:]      .= N2[end-1,:]
-        bb1 = as_ints(findall(abs.(N2) .< 1e-6*unit(N2[1]) ))
-        @views bb = bb1[1,:]
-        @views cc = bb1[2,:]   
-    @inbounds for i in 1:length(bb)
-        if 1 < bb[i] < size(z)[1]
-           N2[bb[i],cc[i]] =  (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]])/2# If N2 is small, substite by mean of neighbours
-        elseif bb[i] == 1
-           N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
-        elseif bb[i] == size(z)[1]
-            N2[bb[i],cc[i]] = N2[bb[i] - 1,cc[i]]
+    ind_smallN2 = findall(abs.(N2) .< 1e-6u"s^-2")
+    one_z = CartesianIndex(1,0)
+    @inbounds for ind in ind_smallN2
+        if 1 < ind[1] < length(z)
+           N2[ind] =  (N2[ind + one_z] + N2[ind - one_z])/2 # If N2 is small, substite by mean of neighbours
+        elseif ind[1] == 1
+           N2[ind] = N2[ind + one_z]
+        elseif ind[1] == length(z)
+            N2[ind] = N2[ind - one_z]
         end
     end
     return N2
 end
-
-"""
-    compute_N2_attempt(xBar_Tv,z)
-Take a (1,1,size(z),size(t)) profile of temperature or virtual temperature and return the Brunt - Väisälä frequency at each z level and at each t. Tried doing it faster that the other function but have not been succesful.
-"""
-function compute_N2_attempt(xBar_Tv,z)
-    T = eltype(xBar_Tv)
-    N2 = zeros(T,length(z),size(xBar_Tv,4))
-    sz,st = size(N2)
-    factor = g/Dryair.cp
-    @inbounds @simd for indt in 1:st
-        for indz in 1:(sz - 1)
-            Tv = xBar_Tv[1,1,indz,indt]
-        dtvdz = (xBar_Tv[1,1,indz+1,indt] - Tv)/(z[indz+1] - z[indz])
-        N2[indz,indt] = g*(dtvdz + factor)/Tv
-        end
-    end
-    @inbounds @simd for indt in 1:st
-        N2[sz,indt] = N2[sz-1,indt]
-    end
-    bb1 = as_ints(findall(abs.(N2) .< 1e-6))
-   
-    bb = bb1[1,:]
-    cc = bb1[2,:]
-    @inbounds @simd for i in 1:length(bb)
-        if 1 < bb[i] < sz
-            N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
-        elseif bb[i] == 1
-            N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
-        elseif bb[i] == sz      
-            N2[bb[i],cc[i]] = N2[bb[i]-1,cc[i]]
-        end
-    end
-    return N2
-end
-
 
 #WIP
 function compute_mse(T,z,qv)
