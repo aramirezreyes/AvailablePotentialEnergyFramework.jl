@@ -18,8 +18,8 @@ function compute_N2(xBar_Tv,z)
     T = typeof(ustrip(g)/z[1])
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     factor = ustrip(g/Dryair.cp)
-    @views  N2[1:end-1,:]  .= ustrip(g) .* ( (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1]) .+ factor)./xBar_Tv[1,1,1:end-1,:]
-    @views  N2[end,:]      .= N2[end-1,:]
+    @views N2[1:end-1,:]  .= ustrip(g) .* ( (xBar_Tv[1,1,2:end,:] .- xBar_Tv[1,1,1:end-1,:]) ./(z[2:end] .- z[1:end-1]) .+ factor) ./ xBar_Tv[1,1,1:end-1,:]
+    @views N2[end,:]      .= N2[end-1,:]
     ind_smallN2 = findall(abs.(N2) .< 1e-6)
     one_z = CartesianIndex(1,0)
     @inbounds for ind in ind_smallN2
@@ -38,13 +38,13 @@ function compute_N2(xBar_Tv :: Array{ <:Quantity }, z :: Array{ <:Quantity })
     T = typeof(g/z[1])
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     factor = g/Dryair.cp
-    @views  N2[1:end-1,:]  .= g .* ( (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1]) .+ factor)./xBar_Tv[1,1,1:end-1,:]
-    @views  N2[end,:]      .= N2[end-1,:]
+    @views N2[1:end-1,:]  .= g .* ( (xBar_Tv[1,1,2:end,:] .- xBar_Tv[1,1,1:end-1,:]) ./ (z[2:end] .- z[1:end-1]) .+ factor) ./ xBar_Tv[1,1,1:end-1,:]
+    @views N2[end,:]      .= N2[end-1,:]
     ind_smallN2 = findall(abs.(N2) .< 1e-6u"s^-2")
     one_z = CartesianIndex(1,0)
     @inbounds for ind in ind_smallN2
         if 1 < ind[1] < length(z)
-           N2[ind] =  (N2[ind + one_z] + N2[ind - one_z])/2 # If N2 is small, substite by mean of neighbours
+           N2[ind] = (N2[ind + one_z] + N2[ind - one_z])/2 # If N2 is small, substite by mean of neighbours
         elseif ind[1] == 1
            N2[ind] = N2[ind + one_z]
         elseif ind[1] == length(z)

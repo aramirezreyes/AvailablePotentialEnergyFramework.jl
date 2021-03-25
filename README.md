@@ -6,8 +6,7 @@
 ![Lifecycle](https://img.shields.io/badge/lifecycle-retired-orange.svg)
 ![Lifecycle](https://img.shields.io/badge/lifecycle-archived-red.svg)
 ![Lifecycle](https://img.shields.io/badge/lifecycle-dormant-blue.svg) -->
-[![Build Status](https://travis-ci.com/aramirezreyes/SAMtools.jl.svg?branch=master)](https://travis-ci.com/aramirezreyes/SAMtools.jl)
-[![codecov.io](http://codecov.io/github/aramirezreyes/SAMtools.jl/coverage.svg?branch=master)](http://codecov.io/github/aramirezreyes/SAMtools.jl?branch=master)
+[![codecov.io](http://codecov.io/github/aramirezreyes/AvailablePotentialEnergyFramework.jl/coverage.svg?branch=master)](http://codecov.io/github/aramirezreyes/AvailablePotentialEnergyFramework.jl?branch=dev)
 
 
 A module to work in the APE framework using outputs from the System for Atmospheric Modeling (SAM) 3d
