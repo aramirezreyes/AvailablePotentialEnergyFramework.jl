@@ -471,6 +471,10 @@ function surface_latent_heat_flux_to_buoyancy(SST :: Quantity, latent_heat_flux 
     return g/(1u"kg/m^3"*Dryair.cp*SST)*(epsilon*Dryair.cp*SST/Liquidwater.Lv*latent_heat_flux) 
 end
 
+"""
+   get_buoyancy(temperature_anomaly,mean_temperature) 
+Compute buoyancy from a temperature anomaly and a temperature profile as in RamirezReyes and Yang 2021
+"""
 function get_buoyancy(temperature_anomaly,mean_temperature) 
     return ustrip(g) * ustrip(temperature_anomaly)/ustrip(mean_temperature)
 end
@@ -479,6 +483,10 @@ function get_buoyancy(temperature_anomaly :: Quantity ,mean_temperature :: Quant
     return g * temperature_anomaly/mean_temperature
 end
 
+"""
+   radiative_heating_rate_to_buoyancy(mean_temperature,radiative_heating_rate)
+Convert radiative heating rate in K/s to buoyancy production rate in m/s^2 using the a mean sounding as reference profile
+"""
 function radiative_heating_rate_to_buoyancy(mean_temperature,radiative_heating_rate)
     return ustrip(g) * radiative_heating_rate / mean_temperature
 end
@@ -487,6 +495,10 @@ function radiative_heating_rate_to_buoyancy(mean_temperature :: Quantity,radiati
     return g * radiative_heating_rate / mean_temperature
 end
 
+"""
+   get_density_ideal_gas(pressure, temperature)
+Compute density of dry air from pressure and temperature using the Ideal gas law.
+"""
 function get_density_ideal_gas(pressure, temperature)
     return pressure / temperature / eltype(temperature)(ustrip(Dryair.R))
 end
