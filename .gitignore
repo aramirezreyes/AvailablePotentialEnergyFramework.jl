@@ -10,3 +10,4 @@ settings.json
 *.jld
 .vscode*
 */.DS_Store
+Manifest.toml

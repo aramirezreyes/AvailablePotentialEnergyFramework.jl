@@ -18,7 +18,7 @@ using NCDatasets: Dataset, variable
 using OffsetArrays: OffsetArray
 using SparseArrays: SparseMatrixCSC
 using Statistics: mean, median!, mean!
-using Parameters: @with_kw
+using Unitful: @u_str, unit, ustrip, Quantity
 
 
 
@@ -77,9 +77,16 @@ export
     get_virtual_temperature,
     get_lifted_condensation_level,
     get_specific_entropy,
+    get_potential_temperature,
+    get_virtual_temperature,
     mixing_ratio_to_specific_humidity,
     specific_humidity_to_mixing_ratio,
     get_buoyancy_of_lifted_parcel,
+    surface_sensible_heat_flux_to_buoyancy,
+    surface_latent_heat_flux_to_buoyancy,
+    get_buoyancy,
+    radiative_heating_rate_to_buoyancy,
+    get_density_ideal_gas,
     #math functions
     integrate_vertically,
     average_precipitation_per_pw_bin,

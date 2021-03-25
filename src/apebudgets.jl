@@ -62,10 +62,9 @@ xBar_APE_DIA     = mean(Diabatic_other.*B,dims=(1,2))[1,1,:,:]./N2;
 
 # interpolation 
 k_up              = argmin(abs.(z.-z_up));
-    z1                = z[1]:dz:z[k_up];
-    @info z1
+z1                = z[1]:dz:z[k_up];
+@info z1
 rho01 = zeros(length(z1),length(t))
-rho02 = zeros(length(z1),length(t))
 xBar_APE_b21 = similar(rho01)
 xBar_APE_RAD1 = similar(rho01)
 xBar_APE_DIA1 = similar(rho01)
@@ -326,7 +325,7 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     int_APE_Vb2   = zeros(T,lt)
     int_APE_rate  = zeros(T,lt)
     @inbounds for time in 1:lt
-        rho01_itp         =  interpolate((z,), rho0[:,time],Gridded(Linear()))
+        rho01_itp         =  interpolate((z,), rho0[1,1,:,time],Gridded(Linear()))
         xBar_APE_b21_itp  =  interpolate((z,), APE_b2[1,1,:,time],Gridded(Linear()))
         xBar_APE_RAD1_itp =  interpolate((z,), xBar_APE_RAD[1,1,:,time],Gridded(Linear()))
         xBar_APE_DIA1_itp =  interpolate((z,), xBar_APE_DIA[1,1,:,time],Gridded(Linear()))
