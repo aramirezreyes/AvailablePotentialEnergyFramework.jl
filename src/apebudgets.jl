@@ -248,7 +248,8 @@ function getapebudget_old(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z
 """
 
 function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t, dx,dy, dz, dt, z_up)
-    N2            = reshape(N2,1,1,length(z),length(t)) 
+    N2            = reshape(N2,1,1,length(z),length(t))
+    rho0            = reshape(rho0,1,1,length(z),length(t)) 
     #***********Empty array generation***********#
     T             = eltype(B)
     lx            = length(x)
@@ -260,18 +261,24 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     xBar_KE       = Array{T}(undef,1,1,lz, lt)
     APE_b2        = Array{T}(undef,1,1,lz, lt)
     xBar_APE_rate = Array{T}(undef,lz, lt)
-    b2_ghost      = Array{T}(undef, length(x)+1,length(y)+1, lz, lt)
+    b2_ghost      = Array{T}(undef,lx,ly, lz, lt)
     xBar_APE_Ub2  = Array{T}(undef,1,1,lz, lt)
     xBar_APE_Vb2  = Array{T}(undef,1,1,lz, lt)
     xBar_APE_WN2  = Array{T}(undef,1,1,lz, lt)
     xBar_APE_RAD  = Array{T}(undef,1,1,lz, lt)
     xBar_APE_DIA  = Array{T}(undef,1,1,lz, lt)
     xBar_APE_Fs   = Array{T}(undef,1,1,lt)
+    
+    neighborx(indx,lx) = mod1(indx+1,lx)
+    onex = CartesianIndex((1,0,0,0))
+    oney = CartesianIndex((0,1,0,0))
+    onet = CartesianIndex((0,0,0,1))
+
+    #    for ind in CartesianIndices((1:(sx - 1), 2:(sy - 1), 1:sz, 2:(st-1)))
+    
     #*************  APE **************
-    @. buf                           = B*B/2
-    @. b2_ghost[1:end-1,1:end-1,:,:] = buf
-    @. b2_ghost[end,1:end-1,:,:]     = buf[1,:,:,:]
-    @. b2_ghost[1:end-1,end,:,:]     = buf[:,1,:,:]
+    @. buf = B*B/2
+    @. b2_ghost = buf
     mean!(APE_b2,buf./N2);
 
     #************ KE ********************
@@ -280,15 +287,28 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     xBar_KE = mean!(xBar_KE,buf)
 
     #************ APE rate ***************
+    
     @.  xBar_APE_rate[:,1:end-1] = (APE_b2[1,1,:,2:end] - APE_b2[1,1,:,1:end-1])/dt; 
     @.  xBar_APE_rate[:,end] = xBar_APE_rate[:,end-1]
     
     #*************  Advection **************
-   
-    @. buf = @views U*(b2_ghost[2:end,1:end-1,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/N2/dx
+    @inbounds  for it in 1:lt, iz in 1:lz, iy in 1:ly, ix in 1:lx 
+        ind = CartesianIndex((ix,iy,iz,it))
+        buf[ind] =  U[ind]*(b2_ghost[neighborx(ix,lx),iy,iz,it] - b2_ghost[ind])/dx
+        buf[ind] = buf[ind] / N2[1,1,iz,it]
+    end
+    
+#    @. buf = @views U*(b2_ghost[2:end,1:end-1,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/N2/dx
     mean!(xBar_APE_Ub2,buf)
-    @. buf = @views V*(b2_ghost[1:end-1,2:end,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/N2/dy
+    #    @. buf = @views V*(b2_ghost[1:end-1,2:end,:,:]-b2_ghost[1:end-1,1:end-1,:,:])/N2/dy
+
+    @inbounds  for it in 1:lt, iz in 1:lz, iy in 1:ly, ix in 1:lx 
+        ind = CartesianIndex((ix,iy,iz,it))
+        buf[ind] = V[ind]*(b2_ghost[ix,neighborx(iy,ly),iz,it] - b2_ghost[ind])/dy
+        buf[ind] = buf[ind] / N2[1,1,iz,it]
+    end
     mean!(xBar_APE_Vb2,buf)
+    
     ################################# static stability WN2
     #APE_WN2     = W.*B
     @. buf = W*B
@@ -301,15 +321,14 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     @. buf = Diabatic_other*B/N2
     mean!(xBar_APE_DIA,buf)
     # Surface fluxes contribution
-    @info "Sizes: " size(B) size(N2) size(Fs) 
-    @info size(xBar_APE_Fs)
-    @inbounds for xind in 1:lx
+    @inbounds for tind in 1:lt
                 for yind in 1:ly
-                    for tind in 1:lt
-                        buf_2d[xind,yind,tind] = B[xind,yind,1,tind]*Fs[xind,yind,tind]/N2[1,1,1,lt]
+                    for xind in 1:lx
+                        buf_2d[xind,yind,tind] = B[xind,yind,1,tind]*Fs[xind,yind,tind]/N2[1,1,1,tind]
                     end
                 end
-            end 
+    end
+    
     mean!(xBar_APE_Fs,buf_2d)
     xBar_APE_Fs = dropdims(xBar_APE_Fs, dims=(1,2))
     # interpolation 
@@ -325,6 +344,7 @@ function getapebudget(B, U,V, W, N2, RAD_b, Fs, Diabatic_other, rho0, x,y, z, t,
     int_APE_Vb2   = zeros(T,lt)
     int_APE_rate  = zeros(T,lt)
     @inbounds for time in 1:lt
+        @show size(rho0), size(z)
         rho01_itp         =  interpolate((z,), rho0[1,1,:,time],Gridded(Linear()))
         xBar_APE_b21_itp  =  interpolate((z,), APE_b2[1,1,:,time],Gridded(Linear()))
         xBar_APE_RAD1_itp =  interpolate((z,), xBar_APE_RAD[1,1,:,time],Gridded(Linear()))
@@ -477,23 +497,6 @@ function get_diabatic_as_residual_buoyancy(B, RAD_b, Fs, U,V, W, N2, dx,dy, dz, 
                 B[ind])/dx + V[ind]*(B[ix,neighborx(iy,sy),iz,it] - B[ind])/dy +
                 W[ind]*N2[iz,it] - RAD_b[ind]
         end
-
-
-# #    for ind in CartesianIndices((sx,1:(sy - 1),1:sz,1:(st - 1)))
-#      for it in 1:(st - 1), iz in 1:sz, iy in 1:(sy - 1), ix in sx:sx
-#         ind = CartesianIndex((ix,iy,iz,it))
-#         Diabatic_other[ind] = B[ind+onet]/dt - B[ind]/dt + U[ind]*B[1,iy,iz,it]/dx -
-#             U[ind]*B[ind]/dx + V[ind]*B[ind+oney]/dy - V[ind]*B[ind]/dy +
-#             W[ind]*N2[iz,it] - RAD_b[ind]
-#     end
-
-#     #   for ind in CartesianIndices((1:sx,sy,sz,1:st))
-#     for it in 1:(st - 1), iz in 1:sz, iy in sy:sy, ix in 1:(sx - 1)
-#         ind = CartesianIndex((ix,iy,iz,it))
-#         Diabatic_other[ind] =  B[ind+onet]/dt - B[ix,1,iz,it]/dt + U[ind]*B[ind + onex]/dx -
-#             U[ind]*B[ind]/dx + V[ind]*B[ix,1,iz,it]/dy - V[ind]*B[ind]/dy +
-#             W[ind]*N2[iz,it] - RAD_b[ind]
-#     end
 
 
 #    for it in st:st, iz in 1:sz, iy in 1:(sy - 1), ix in 1:(sx - 1)
