@@ -1,7 +1,7 @@
 using AvailablePotentialEnergyFramework, BenchmarkTools, Statistics
 
 
-a = 100rand(500,500,80,100)
+a = 100rand(512,512,80,100)
 buf = similar(a)
 @info "Running benchmark with nthreads = $(Threads.nthreads())"
 bench =  @benchmark AvailablePotentialEnergyFramework.filter_array_2!($buf,$a,$25,$25,$1);
