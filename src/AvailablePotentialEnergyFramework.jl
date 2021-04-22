@@ -10,7 +10,7 @@ module AvailablePotentialEnergyFramework
 
 
 using DataStructures: OrderedDict
-using ImageFiltering: imfilter, imfilter!, centered, kernelfactors, mapwindow, mapwindow!, Kernel, Inner
+using ImageFiltering: imfilter, imfilter!, centered, kernelfactors, mapwindow, mapwindow!, Kernel, Inner, Pad, BorderArray, padarray
 using Images: findlocalminima
 using ImageSegmentation: SegmentedImage, segment_labels, region_adjacency_graph, seeded_region_growing, labels_map
 using Interpolations: LinearInterpolation, interpolate, Gridded, Linear

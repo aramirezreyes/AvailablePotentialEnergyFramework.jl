@@ -21,9 +21,6 @@ Create a kernel to perform a moving average filtering of a 4-d array along the d
         !isodd(window_h) && (window_h += 1 )
         ones(T,window_h)./(window_h)
     end
-     if !isodd(window_t)
-         window_t += 1
-     end
      
     kernel_t = if (window_t == 1) | (window_t == false)
         centered([T(1.0)])
@@ -47,7 +44,8 @@ Create a kernel to perform a moving average filtering of a 3-d array along the d
          window_t += 1
      end
      kernel_h = ones(T,window_h)./(window_h)
-     return  kernelfactors(( centered(kernel_h), centered(kernel_h), centered([T(1.0)]) ))
+     kernel_t = ones(T,window_t)./(window_t)
+     return  kernelfactors(( centered(kernel_h), centered(kernel_h), centered(kernel_t) ))
  end
  
  """
@@ -97,30 +95,63 @@ Create a kernel to perform a moving average filtering of a 3-d array along the d
  This function calls under the hood the imfilter function of Images.jl 
  
  """
-function filter_array_2!(buf :: Array{T,4},array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
-    sx,sy,sz,st = size(array)
-#    filtered = similar(array)
+ function filter_array_2!(buf,array::Array{T,4},smooth_x,smooth_time,position) where T <: Real
+     
+     if !isodd(smooth_x)
+         smooth_x += 1
+     end
+     if !isodd(smooth_time)
+         smooth_time += 1
+     end
      if position == 2
-         filtered = imfilter(imfilter(array, kernel4d(smooth_x,smooth_time),"circular"),kernel_4d_t(smooth_time),"inner")
+         filtered = imfilter(imfilter(array, kernel4d(smooth_x,smooth_time),"circular"),kernel4d_t(smooth_time),"inner")
      else
          ###Filtering in space
-        
-         @info typeof(array) typeof(buf)
-         @inbounds for t in 1:st
-             @Threads.threads for z in 1:sz
-                 imfilter!(view(buf,:,:,z,t),array[:,:,z,t], kernel_2d(smooth_x),"circular")
+         kernel_full = kernel_4d(smooth_x,smooth_time,T)
+         kernel_space_1 = kernel_full[1]
+         kernel_space_2 = kernel_full[2]
+         kernel_time = kernel_full[4]
+
+         padded = BorderArray(array,Pad(:circular,smooth_x,smooth_x,0,0))
+         #padded = padarray(array,Pad(:circular,smooth_x,smooth_x,0))
+         @avx thread=true for J in CartesianIndices(buf)
+             tmp = zero(eltype(buf))
+
+             for I in CartesianIndices(axes(kernel_space_1))
+                 tmp += padded[I + J] * kernel_space_1[I]
              end
+             buf[J] = tmp
          end
-         @info typeof(array) typeof(buf)         
-     ### filtering in time
-         @inbounds for z in 1:sz, y in 1:sy
-             @Threads.threads for x in 1:sx
-                 array[x,y,z,:] .= imfilter(buf[x,y,z,:], kernel_1d(smooth_time),"symmetric")
+         padded = BorderArray(buf,Pad(:circular,smooth_x,smooth_x,0,0))
+         #padded = padarray(buf,Pad(:circular,smooth_x,smooth_x,0))
+         @avx thread=true for J in CartesianIndices(array)
+              tmp = zero(eltype(array))
+          for I in CartesianIndices(axes(kernel_space_2))
+                  tmp += padded[I + J] * kernel_space_2[I]
+              end
+              array[J] = tmp
+          end
+
+         
+         ###Filtering in space
+         padded = BorderArray(array,Pad(:symmetric,0,0,0,smooth_time))
+         #padded = padarray(array,Pad(:symmetric,0,0,smooth_time))
+      
+         @avx thread=true for J in CartesianIndices(buf)
+             tmp = zero(eltype(buf))
+          
+           for I in CartesianIndices(axes(kernel_time))
+                 tmp += padded[I + J] * kernel_time[I]
              end
+          
+             buf[J] = tmp
          end
+
+         
+         
      end
-    return array
-end    
+     return buf
+ end  
  
  """
  filter_array_2!(array,smooth_x,smooth_t,position)
@@ -132,22 +163,62 @@ In the first two dimensions the window width is smooth_x and the border is treat
 This function calls under the hood the imfilter function of Images.jl
 
 """
- function filter_array_2!(array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
-     filtered = similar(array)
-     sx,sy,st = size(array)
+ function filter_array_2!(buf,array::Array{T,3},smooth_x,smooth_time,position) where T <: Real
+     
+     if !isodd(smooth_x)
+         smooth_x += 1
+     end
+     if !isodd(smooth_time)
+         smooth_time += 1
+     end
      if position == 2
          filtered = imfilter(imfilter(array, kernel4d(smooth_x,smooth_time),"circular"),kernel4d_t(smooth_time),"inner")
      else
          ###Filtering in space
-         for t in 1:st
-             filtered[:,:,t] = imfilter(filtered,array[:,:,t], kernel_2d(smooth_x),"circular")
+         kernel_full = kernel_3d(smooth_x,smooth_time,T)
+         kernel_space_1 = kernel_full[1]
+         kernel_space_2 = kernel_full[2]
+         kernel_time = kernel_full[3]
+
+         padded = BorderArray(array,Pad(:circular,smooth_x,smooth_x,0))
+         #padded = padarray(array,Pad(:circular,smooth_x,smooth_x,0))
+         @avx thread=true for J in CartesianIndices(buf)
+             tmp = zero(eltype(buf))
+
+             for I in CartesianIndices(axes(kernel_space_1))
+                 tmp += padded[I + J] * kernel_space_1[I]
+             end
+             buf[J] = tmp
          end
-         ### filtering in time
-         for y in 1:sy, x in 1:sx
-             array[x,y,:] = imfilter(filtered[x,y,:], kernel_1d(smooth_time),"symmetric")
+         padded = BorderArray(buf,Pad(:circular,smooth_x,smooth_x,0))
+         #padded = padarray(buf,Pad(:circular,smooth_x,smooth_x,0))
+         @avx thread=true for J in CartesianIndices(array)
+              tmp = zero(eltype(array))
+          for I in CartesianIndices(axes(kernel_space_2))
+                  tmp += padded[I + J] * kernel_space_2[I]
+              end
+              array[J] = tmp
+          end
+
+         
+         ###Filtering in space
+         padded = BorderArray(array,Pad(:symmetric,0,0,smooth_time))
+         #padded = padarray(array,Pad(:symmetric,0,0,smooth_time))
+      
+         @avx thread=true for J in CartesianIndices(buf)
+             tmp = zero(eltype(buf))
+          
+           for I in CartesianIndices(axes(kernel_time))
+                 tmp += padded[I + J] * kernel_time[I]
+             end
+          
+             buf[J] = tmp
          end
+
+         
+         
      end
-     #return array
+     return buf
  end  
  """
      filter_array!(buffer,array,smooth_x,smooth_t,position)
@@ -177,6 +248,7 @@ This function calls under the hood the imfilter function of Images.jl
          imfilter!(buf,array, kernel_3d(smooth_x,smooth_time,T)[1:2],"circular")
          imfilter!(array,buf,(kernel_3d_t(smooth_time,T)[3],),"symmetric")
      end
+     return array
  end
  
  """
