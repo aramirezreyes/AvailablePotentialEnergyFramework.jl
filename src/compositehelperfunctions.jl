@@ -5,10 +5,10 @@ smooth_and_mask(surf_pres_anomaly, threshold = -9)
 Takes a 2d array and smooths it using a rolling median filter. 
 It then returns the elements of the filtered array whose values are less than the threshold.
 """
-function smooth_and_mask(surf_pres_anomaly,threshold=-9, resolution = 2000)
+function smooth_and_mask(surf_pres_anomaly,threshold=-9, resolution = 2000; target_lengthscale = 30000)
 buf1 = similar(surf_pres_anomaly)
 buf2 = similar(buf1)
-smooth_and_mask!(buf1,buf2,surf_pres_anomaly,threshold,resolution)
+smooth_and_mask!(buf1,buf2,surf_pres_anomaly,threshold,resolution; target_lengthscale)
 return buf2
 end
 
@@ -18,8 +18,8 @@ smooth_and_mask!(buf,surf_pres_anomaly, threshold = -9)
 Takes a 2d array and smooths it using a rolling median filter. 
 It then returns the elements of the filtered array whose values are less than the threshold.
 """
-function smooth_and_mask!(buf,buf2,surf_pres_anomaly,threshold=-9, resolution = 2000)
-windowsize = 30000 ÷ (2*resolution) # Length order of magnitude of the eye
+function smooth_and_mask!(buf,buf2,surf_pres_anomaly,threshold=-9, resolution = 2000; target_lengthscale = 30000)
+windowsize = target_lengthscale ÷ (2*resolution) # Length order of magnitude of the eye
 windowsize % 2 == 0 ? windowsize = windowsize + 1 : windowsize
 mapwindow!(median!,buf,surf_pres_anomaly,[windowsize,windowsize],border="circular");
 imfilter!(buf2,buf,Kernel.gaussian(3),"circular");
@@ -38,10 +38,10 @@ Takes a surface pressure anomaly array surf_pres_anomaly[x,y] = surf_pres[x,y] .
 a detection threshold for the anomaly, and return an array of tuples (x,y) 
 where each tuple represents the centers of cyclones identified as the minima of the anomaly.
 """
-function findcyclonecenters_aspressureminima(surf_pres_anomaly,detection_threshold,grid_spacing=2000)
+function findcyclonecenters_aspressureminima(surf_pres_anomaly,detection_threshold;grid_spacing=2000, target_lengthscale = 30000)
 buf1 = similar(surf_pres_anomaly)
 buf2 = similar(buf1)
-peaks = findcyclonecenters_aspressureminima!(buf1,buf2,surf_pres_anomaly,detection_threshold,grid_spacing)
+peaks = findcyclonecenters_aspressureminima!(buf1,buf2,surf_pres_anomaly,detection_threshold;grid_spacing, target_lengthscale)
 return peaks
 end
 
@@ -52,8 +52,8 @@ Takes a surface pressure anomaly array surf_pres_anomaly[x,y] = surf_pres[x,y] .
 a detection threshold for the anomaly, and return an array of tuples (x,y) 
 where each tuple represents the centers of cyclones identified as the minima of the anomaly.
 """
-function findcyclonecenters_aspressureminima!(buf1,buf2,surf_pres_anomaly,detection_threshold,grid_spacing=2000)
-surf_pres_filtered = smooth_and_mask!(buf1,buf2,surf_pres_anomaly,detection_threshold,grid_spacing);
+function findcyclonecenters_aspressureminima!(buf1,buf2,surf_pres_anomaly,detection_threshold;grid_spacing=2000, target_lengthscale = 30000)
+surf_pres_filtered = smooth_and_mask!(buf1,buf2,surf_pres_anomaly,detection_threshold,grid_spacing; target_lengthscale);
 peaks              = findlocalminima(surf_pres_filtered,[1,2],false);
 return peaks
 end
@@ -80,11 +80,11 @@ function detect_cyclones!(buf1, buf2,pressure_anomaly,pressure_threshold,resolut
 receive 2 buffers and a pressure anomaly and returns a segmented image with the cyclones
 
 """
-function detect_cyclones(pressure_anomaly,pressure_threshold,resolution)
+function detect_cyclones(pressure_anomaly,pressure_threshold,resolution; target_lengthscale = 30000)
 buf1 = similar(pressure_anomaly)
 buf2 = similar(buf1)
-(centers_and_labels,cyclones) = detect_cyclones!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution)
-return (centers_and_labels,cyclones)
+frame_with_detected_cyclones = detect_cyclones!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution; target_lengthscale)
+return frame_with_detected_cyclones
 end
 
 """
@@ -92,7 +92,7 @@ function detect_cyclones!(buf1, buf2,pressure_anomaly,pressure_threshold,resolut
 receive 2 buffers and a pressure anomaly and returns a segmented image with the cyclones
 
 """
-function detect_cyclones!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution)
+function detect_cyclones!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution; target_lengthscale = 30000)
 neighbourhood_gen(arraysize) = point -> AvailablePotentialEnergyFramework.neighbours_2d(arraysize,point)
 centers = findcyclonecenters_aspressureminima!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution) #buf2 is the masked array
 #@info centers

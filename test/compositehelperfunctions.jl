@@ -47,9 +47,13 @@ end
     psfc = Dataset(joinpath(@__DIR__,"testfiles/test_composite_PSFC_TABS.nc")) do ds 
         variable(ds, "PSFC")[:,:,:]
     end
+    psfc = cat(psfc,fill(mean(psfc) ,size(psfc)) + 5rand(size(psfc)...),dims=3)
+    
+    
     TABS = Dataset(joinpath(@__DIR__,"testfiles/test_composite_PSFC_TABS.nc")) do ds 
         variable(ds, "TABS")[:,:,:,:]
     end
+    TABS = cat(TABS,fill(mean(TABS) ,size(TABS)) + 1rand(size(TABS)...),dims=3)
     @testset "Detect centers" begin
         pressure_anomaly = psfc .- mean(psfc,dims=(1,2))
         centerstest =  AvailablePotentialEnergyFramework.findcyclonecenters_aspressureminima(pressure_anomaly[:,:,1],-5)
@@ -78,8 +82,19 @@ end
         
         @test_nowarn [averageallindistance(bin,addition_2d,(128,128),4000) for bin in bins]
 
-       @test_nowarn [averageallindistance(bin,addition_3d,(128,128),4000) for bin in bins]
-       
-
+        @test_nowarn [averageallindistance(bin,addition_3d,(128,128),4000) for bin in bins]
+### Try and add two frames, one with and one without TC
+        centers_labels_and_cyclones = [detect_cyclones(pressure_anomaly[:,:,i],-5,2000) for i in 1:2]
+        @test 3 == begin
+            totalcyclonecount = 0
+            for timeindex in 1:2
+                centers_and_labels,cyclones = centers_labels_and_cyclones[timeindex]
+                if !isnothing(centers_and_labels)
+                    count, _ = AvailablePotentialEnergyFramework.add_allcyclones(TABS[:,:,timeindex],cyclones,centers_and_labels;maskcyclones = false)
+                    totalcyclonecount += count
+                end                
+            end
+            totalcyclonecount
+        end 
     end
 end
