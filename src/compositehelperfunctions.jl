@@ -93,17 +93,20 @@ receive 2 buffers and a pressure anomaly and returns a segmented image with the 
 
 """
 function detect_cyclones!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution; target_lengthscale = 30000)
-neighbourhood_gen(arraysize) = point -> AvailablePotentialEnergyFramework.neighbours_2d(arraysize,point)
-centers = findcyclonecenters_aspressureminima!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution) #buf2 is the masked array
-#@info centers
-if length(centers) == 0
-    return (nothing,nothing)
-end
-centers_and_labels = [(centers[i],i) for i in 1:length(centers)]
-#mask = pres_anomaly .<= pressure_threshold
-push!(centers_and_labels,(findfirst(==(-9999),buf2),1000))
-cyclones = seeded_region_growing(buf2,centers_and_labels,neighbourhood_gen(size(pressure_anomaly))) #Many allocations? this may be the culprit
-return (centers_and_labels,cyclones)
+  neighbourhood_gen(arraysize) = point -> AvailablePotentialEnergyFramework.neighbours_2d(arraysize,point)
+    centers = findcyclonecenters_aspressureminima!(buf1,buf2,pressure_anomaly,pressure_threshold; grid_spacing = resolution, target_lengthscale) #buf2 is the masked array
+    #@info centers
+    if length(centers) == 0
+        return FrameWithDetectedCyclones(0,Int[],CartesianIndex{ndims(pressure_anomaly)}[],nothing)
+    end
+    centers_and_labels = [(centers[i],i) for i in 1:length(centers)]
+    labels = collect(1:length(centers))
+    #mask = pres_anomaly .<= pressure_threshold
+    push!(centers,findfirst(==(-9999),buf2))
+    push!(labels,1000)
+    push!(centers_and_labels,(centers[end],labels[end]))
+    cyclones = seeded_region_growing(buf2,centers_and_labels,neighbourhood_gen(size(pressure_anomaly))) #Many allocations? this may be the culprit
+    return FrameWithDetectedCyclones(length(centers),labels,centers,cyclones)
 end
 
 
@@ -136,11 +139,11 @@ add_allcyclones(array :: Array{T,2},radius_bins,array :: Array{T,3},segmentedcyc
 Compute the azimuthal average of some quantity around a center. Repeats the process and averages about all the tropical cyclones detected on the array.
 It receives an array with the radius bins to use,the field to average, called `array`, each cyclone as a SegmentedImage,the centers of the cyclones and the gridspacing.
 """
-function add_allcyclones(array,segmentedcyclones,cyclonescenters;maskcyclones = true)
+function add_allcyclones(array,framewithsegmentedcyclones;maskcyclones = true)
 addition = zeros(eltype(array),size(array))
 buf1 = similar(addition)
 buf2 = similar(addition)
-cyclonecount = add_allcyclones!(addition,buf1,buf2,array,segmentedcyclones,cyclonescenters;maskcyclones)
+cyclonecount = add_allcyclones!(addition,buf1,buf2,array,framewithsegmentedcyclones;maskcyclones)
 return (cyclonecount,addition)
 end
 
@@ -150,41 +153,43 @@ add_allcyclones!(addition :: Array{T,2}, buf :: Array{T,2},array :: Array{T,2},r
 Compute the azimuthal average of some quantity around a center. Repeats the process and averages about all the tropical cyclones detected on the array.
 It receives an array with the radius bins to use,the field to average, called `array`, each cyclone as a SegmentedImage,the centers of the cyclones and the gridspacing.
 """
-function add_allcyclones!(addition,buf1,buf2,array,segmentedcyclones,cyclonescenters;maskcyclones = true) 
-if !(size(addition) == size(buf1) == size(array))
-    DimensionMismatch("Addition, buffer and array must all have the same dimensions")
-end
+function add_allcyclones!(addition,buf1,buf2,array,framewithsegmentedcyclones;maskcyclones = true) 
+    if !(size(addition) == size(buf1) == size(array))
+        DimensionMismatch("Addition, buffer and array must all have the same dimensions")
+    end
     center = size(array)[1:2] .÷ 2
     #@info center
-adjacency, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
-cyclonecount = 0
-if maskcyclones   
-    @inbounds for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
-        labelsmap = labels_map(segmentedcyclones)
-        @inbounds for ind in CartesianIndices(array)
-            if labelsmap[ind[1],ind[2]] == cyclone
-                buf2[ind] = array[ind]
+    segmentedcyclones = framewithsegmentedcyclones.segmented_frame
+    cyclonescenters = framewithsegmentedcyclones.centers
+    adjacency, vert_map = region_adjacency_graph(segmentedcyclones, (i,j)->1)
+    addedcyclonescount = 0
+    if maskcyclones
+        @inbounds for cyclone in 1:(length(segmentedcyclones.segment_labels)-1) #Last label is where no cyclones appear
+            labelsmap = labels_map(segmentedcyclones)
+            @inbounds for ind in CartesianIndices(array)
+                if labelsmap[ind[1],ind[2]] == cyclone
+                    buf2[ind] = array[ind]
+                else
+                    buf2[ind] = 0.0
+                end            
+            end
+            if !isinteracting(adjacency.weights,cyclone)
+                addedcyclonescount += 1
+                addition .+=  shifter!(buf1,buf2,center,cyclonescenters[cyclone])
+            end
+        end
+    else #no cyclone masking
+        @inbounds for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
+            if !isinteracting(adjacency.weights,cyclone)           
+                addedcyclonescount += 1
+                addition .+=  shifter!(buf1,array,center,cyclonescenters[cyclone])
             else
-                buf2[ind] = 0.0
-            end            
-        end 
-        if !isinteracting(adjacency.weights,cyclone)
-            cyclonecount += 1
-            addition .+=  shifter!(buf1,buf2,center,cyclonescenters[cyclone][1])
+                @debug "Cyclone is too close to another one"
+            end
         end
     end
-else #no cyclone masking
-    @inbounds for cyclone in 1:(length(segmentedcyclones.segment_labels)-1)
-        if !isinteracting(adjacency.weights,cyclone)           
-            cyclonecount += 1
-            addition .+=  shifter!(buf1,array,center,cyclonescenters[cyclone][1])
-        else
-            @debug "Cyclone is too close to another one"
-        end
-    end
-end
-return cyclonecount
-
+    return addedcyclonescount
+    
     
 end
 

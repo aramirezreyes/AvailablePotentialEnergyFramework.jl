@@ -60,21 +60,21 @@ end
 
         @test length(centerstest) == 5
 
-        centers_and_labels,cyclones = detect_cyclones(pressure_anomaly[:,:,1],-5,2000)
+        framewithcyclones = detect_cyclones(pressure_anomaly[:,:,1],-5,2000)
         
-        @test length(centers_and_labels) == 6
-        @test all([cyclones.segment_pixel_count[key] > 1 for key in keys(cyclones.segment_pixel_count)])
+        @test length(framewithcyclones.labels) == 6
+        @test all([framewithcyclones.segmented_frame.segment_pixel_count[key] > 1 for key in keys(framewithcyclones.segmented_frame.segment_pixel_count)])
         
-        (cyclonecount_2d,addition_2d) = AvailablePotentialEnergyFramework.add_allcyclones(psfc[:,:,1],cyclones,centers_and_labels; maskcyclones = false)
+        (cyclonecount_2d,addition_2d) = AvailablePotentialEnergyFramework.add_allcyclones(psfc[:,:,1],framewithcyclones; maskcyclones = false)
         @test cyclonecount_2d == 3
         
-        (cyclonecount_2d,addition_2d) = AvailablePotentialEnergyFramework.add_allcyclones(psfc[:,:,1],cyclones,centers_and_labels; maskcyclones = true)
+        (cyclonecount_2d,addition_2d) = AvailablePotentialEnergyFramework.add_allcyclones(psfc[:,:,1],framewithcyclones; maskcyclones = true)
         @test cyclonecount_2d == 3
 
-        (cyclonecount_3d,addition_3d) = AvailablePotentialEnergyFramework.add_allcyclones(TABS[:,:,:,1],cyclones,centers_and_labels; maskcyclones = false)
+        (cyclonecount_3d,addition_3d) = AvailablePotentialEnergyFramework.add_allcyclones(TABS[:,:,:,1],framewithcyclones; maskcyclones = false)
         @test cyclonecount_3d == 3
         
-        (cyclonecount_3d,addition_3d) = AvailablePotentialEnergyFramework.add_allcyclones(TABS[:,:,:,1],cyclones,centers_and_labels; maskcyclones = true)
+        (cyclonecount_3d,addition_3d) = AvailablePotentialEnergyFramework.add_allcyclones(TABS[:,:,:,1],framewithcyclones; maskcyclones = true)
         @test cyclonecount_3d == 3
         
         binlimits = 0:2000:300000
@@ -84,13 +84,13 @@ end
 
         @test_nowarn [averageallindistance(bin,addition_3d,(128,128),4000) for bin in bins]
 ### Try and add two frames, one with and one without TC
-        centers_labels_and_cyclones = [detect_cyclones(pressure_anomaly[:,:,i],-5,2000) for i in 1:2]
+       frameswithcyclones = [detect_cyclones(pressure_anomaly[:,:,i],-5,2000) for i in 1:2]
         @test 3 == begin
             totalcyclonecount = 0
             for timeindex in 1:2
-                centers_and_labels,cyclones = centers_labels_and_cyclones[timeindex]
-                if !isnothing(centers_and_labels)
-                    count, _ = AvailablePotentialEnergyFramework.add_allcyclones(TABS[:,:,timeindex],cyclones,centers_and_labels;maskcyclones = false)
+                framewithcyclones = frameswithcyclones[timeindex]
+                if !iszero(framewithcyclones.count)
+                    count, _ = AvailablePotentialEnergyFramework.add_allcyclones(TABS[:,:,timeindex],framewithcyclones;maskcyclones = false)
                     totalcyclonecount += count
                 end                
             end

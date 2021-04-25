@@ -1,4 +1,5 @@
 using AvailablePotentialEnergyFramework
+using Aqua
 using Test
 using NCDatasets: Dataset, variable
 using Statistics: mean
@@ -22,3 +23,5 @@ using Unitful: @u_str, unit, ustrip, Quantity
     #include("arrayfiltering.jl")
 
 end
+
+Aqua.test_all(AvailablePotentialEnergyFramework)
