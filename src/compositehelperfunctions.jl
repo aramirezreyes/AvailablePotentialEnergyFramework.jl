@@ -94,7 +94,7 @@ receive 2 buffers and a pressure anomaly and returns a segmented image with the 
 """
 function detect_cyclones!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution; target_lengthscale = 30000)
 neighbourhood_gen(arraysize) = point -> AvailablePotentialEnergyFramework.neighbours_2d(arraysize,point)
-centers = findcyclonecenters_aspressureminima!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution) #buf2 is the masked array
+centers = findcyclonecenters_aspressureminima!(buf1,buf2,pressure_anomaly,pressure_threshold; grid_spacing = resolution, target_lengthscale)#buf2 is the masked array
 #@info centers
 if length(centers) == 0
     return (nothing,nothing)
