@@ -83,8 +83,8 @@ receive 2 buffers and a pressure anomaly and returns a segmented image with the 
 function detect_cyclones(pressure_anomaly,pressure_threshold,resolution; target_lengthscale = 30000)
 buf1 = similar(pressure_anomaly)
 buf2 = similar(buf1)
-(centers_and_labels,cyclones) = detect_cyclones!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution)
-return (centers_and_labels,cyclones)
+frame_with_detected_cyclones = detect_cyclones!(buf1,buf2,pressure_anomaly,pressure_threshold,resolution; target_lengthscale)
+return frame_with_detected_cyclones
 end
 
 """
