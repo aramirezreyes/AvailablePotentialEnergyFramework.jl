@@ -22,6 +22,7 @@ using Unitful: @u_str, unit, ustrip, Quantity
 using LoopVectorization: @avx
 using Tullio: @tullio
 
+include("types.jl")
 include("apehelperfunctions.jl")
 include("compositehelperfunctions.jl")
 include("apebudgets.jl")
