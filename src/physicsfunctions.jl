@@ -20,24 +20,25 @@ as_ints(a::AbstractArray{CartesianIndex{L}}) where L = reshape(reinterpret(Int, 
     compute_N2(xBar_Tv,z)
 Take a (1,1,size(z),size(t)) profile of temperature or virtual temperature and return the Brunt - Väisälä frequency at each z level and at each t.
 """
-function compute_N2(xBar_Tv,z)
-    T = eltype(xBar_Tv)
+function compute_N2_new(xBar_Tv,z)
+    T = typeof(g/z[1])
     N2 = zeros(T,length(z),size(xBar_Tv,4))
-    factor = g/Dryair.cp
-    @views  N2[1:end-1,:]  .= (xBar_Tv[1,1,2:end,:]-xBar_Tv[1,1,1:end-1,:])./(z[2:end].-z[1:end-1])
-    @views  @. N2  = g * (N2 + factor)/xBar_Tv[1,1,:,:]
-    @views  N2[end,:]      .= N2[end-1,:]
-        bb1 = as_ints(findall(abs.(N2) .< 1e-6))
-        @views bb = bb1[1,:]
-        @views cc = bb1[2,:]   
-    @inbounds for i in 1:length(bb)
-        if 1 < bb[i] < size(z)[1]
-           N2[bb[i],cc[i]] = 0.5 * (N2[bb[i]-1,cc[i]] + N2[bb[i]+1,cc[i]]) # If N2 is small, substite by mean of neighbours
-        elseif bb[i] == 1
-           N2[bb[i],cc[i]] = N2[bb[i]+1,cc[i]]
-        elseif bb[i] == size(z)[1]
-            N2[bb[i],cc[i]] = N2[bb[i] - 1,cc[i]]
+    factor = (g/Dryair.cp)
+    @views N2[1:end-1,:]  .= g .* ( (xBar_Tv[1,1,2:end,:] .- xBar_Tv[1,1,1:end-1,:]) ./(z[2:end] .- z[1:end-1]) .+ factor) ./ xBar_Tv[1,1,1:end-1,:]
+    @views N2[end,:]      .= N2[end-1,:]
+    for _ in 1:10
+    ind_smallN2 = sort!(findall(abs.(N2) .< 1e-4), by = x -> x[1], rev = true)
+        @show length(ind_smallN2)
+    one_z = CartesianIndex(1,0)
+    @inbounds for ind in ind_smallN2
+        if 1 < ind[1] < length(z)
+           N2[ind] =  (N2[ind + one_z] + N2[ind])/2 # If N2 is small, substite by mean of neighbours
+        elseif ind[1] == 1
+           N2[ind] = (N2[ind + one_z] + N2[ind])/2
+        elseif ind[1] == length(z)
+            N2[ind] = N2[ind - one_z]
         end
+    end
     end
     return N2
 end
