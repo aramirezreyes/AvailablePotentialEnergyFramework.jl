@@ -20,7 +20,7 @@ as_ints(a::AbstractArray{CartesianIndex{L}}) where L = reshape(reinterpret(Int, 
     compute_N2(xBar_Tv,z)
 Take a (1,1,size(z),size(t)) profile of temperature or virtual temperature and return the Brunt - Väisälä frequency at each z level and at each t.
 """
-function compute_N2_new(xBar_Tv,z)
+function compute_N2(xBar_Tv,z)
     T = typeof(g/z[1])
     N2 = zeros(T,length(z),size(xBar_Tv,4))
     factor = (g/Dryair.cp)
