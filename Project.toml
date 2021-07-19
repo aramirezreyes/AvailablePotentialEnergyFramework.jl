@@ -4,6 +4,7 @@ authors = ["Argel Ramírez Reyes <argel.ramirez@gmail.com>"]
 version = "0.0.2"
 
 [deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 ImageFiltering = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
