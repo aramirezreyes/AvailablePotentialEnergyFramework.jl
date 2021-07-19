@@ -14,7 +14,7 @@ using ImageFiltering: imfilter, imfilter!, centered, kernelfactors, mapwindow, m
 using Images: findlocalminima
 using ImageSegmentation: SegmentedImage, segment_labels, region_adjacency_graph, seeded_region_growing, labels_map
 using Interpolations: LinearInterpolation, interpolate, Gridded, Linear
-using NCDatasets: Dataset, variable
+using NCDatasets: Dataset, variable, defVar
 using OffsetArrays: OffsetArray
 using SparseArrays: SparseMatrixCSC
 using Statistics: mean, median!, mean!
@@ -92,6 +92,7 @@ export
     average_precipitation_per_pw_bin,
     average_precipitation_per_pw_bin_dayang,
     #Files and datamanagement
-    smooth_vars_and_write_to_netcdf!
-    
+    smooth_vars_and_write_to_netcdf!,
+    create_APE_netcdf,
+    set_netcdf_var!
 end
