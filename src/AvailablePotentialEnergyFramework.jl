@@ -19,7 +19,7 @@ using OffsetArrays: OffsetArray
 using SparseArrays: SparseMatrixCSC
 using Statistics: mean, median!, mean!
 using Unitful: @u_str, unit, ustrip, Quantity
-using LoopVectorization: @avx
+using LoopVectorization: @turbo, @tturbo
 using Tullio: @tullio
 
 include("apehelperfunctions.jl")
