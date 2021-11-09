@@ -11,7 +11,7 @@ module AvailablePotentialEnergyFramework
 
 using DataStructures: OrderedDict
 using ImageFiltering: imfilter, imfilter!, centered, kernelfactors, mapwindow, mapwindow!, Kernel, Inner
-using Images: findlocalminima
+using Images: findlocalminima, findlocalmaxima
 using ImageSegmentation: SegmentedImage, segment_labels, region_adjacency_graph, seeded_region_growing, labels_map
 using Interpolations: LinearInterpolation, interpolate, Gridded, Linear
 using NCDatasets: Dataset, variable, defVar
@@ -43,7 +43,7 @@ export
     cat_ape_budget,
     cutborders!,
     #Methods
-    findlocalmaxima,
+#    findlocalmaxima,
     cyclonecompositer,
     shifter,
     shifter!,
