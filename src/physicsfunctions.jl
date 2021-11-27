@@ -132,9 +132,13 @@ function integrate_vertically(field :: AbstractArray{T,4}; coord :: AbstractArra
     return integral
 end
 
+"""
+    compute_virtual_temp(temperature, specific_humidity)
+Compute the virtual temperature considering only water vapor mixing ratio.   
+"""
 
-function compute_virtual_temp(T,QV)
-    return T.*(1 .+ 0.61QV)
+function compute_virtual_temp(temperature,specific_humidity)
+    return temperature*(1 + epsilon*specific_humidity)
 end
 
 
