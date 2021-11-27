@@ -11,15 +11,15 @@ module AvailablePotentialEnergyFramework
 
 using DataStructures: OrderedDict
 using ImageFiltering: imfilter, imfilter!, centered, kernelfactors, mapwindow, mapwindow!, Kernel, Inner
-using Images: findlocalminima
+using Images: findlocalminima, findlocalmaxima
 using ImageSegmentation: SegmentedImage, segment_labels, region_adjacency_graph, seeded_region_growing, labels_map
 using Interpolations: LinearInterpolation, interpolate, Gridded, Linear
-using NCDatasets: Dataset, variable
+using NCDatasets: Dataset, variable, defVar
 using OffsetArrays: OffsetArray
 using SparseArrays: SparseMatrixCSC
 using Statistics: mean, median!, mean!
 using Unitful: @u_str, unit, ustrip, Quantity
-using LoopVectorization: @avx
+using LoopVectorization: @turbo, @tturbo
 using Tullio: @tullio
 
 include("apehelperfunctions.jl")
@@ -43,7 +43,7 @@ export
     cat_ape_budget,
     cutborders!,
     #Methods
-    findlocalmaxima,
+#    findlocalmaxima,
     cyclonecompositer,
     shifter,
     shifter!,
@@ -92,6 +92,7 @@ export
     average_precipitation_per_pw_bin,
     average_precipitation_per_pw_bin_dayang,
     #Files and datamanagement
-    smooth_vars_and_write_to_netcdf!
-    
+    smooth_vars_and_write_to_netcdf!,
+    create_APE_netcdf,
+    set_netcdf_var!
 end

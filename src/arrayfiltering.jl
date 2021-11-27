@@ -219,7 +219,7 @@ This function calls under the hood the imfilter function of Images.jl
  """
 function filter_array(array::Array{T,3},smooth_x,smooth_time,position = 1) where T <: Real
     if !isodd(smooth_time)
-         window_t += 1
+         smooth_time += 1
     end
     if position==2
         asize = size(array)

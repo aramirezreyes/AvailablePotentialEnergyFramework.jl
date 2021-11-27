@@ -56,11 +56,11 @@ end
     TABS = cat(TABS,fill(mean(TABS) ,size(TABS)) + 1rand(size(TABS)...),dims=3)
     @testset "Detect centers" begin
         pressure_anomaly = psfc .- mean(psfc,dims=(1,2))
-        centerstest =  AvailablePotentialEnergyFramework.findcyclonecenters_aspressureminima(pressure_anomaly[:,:,1],-5)
+        centerstest =  AvailablePotentialEnergyFramework.findcyclonecenters(AvailablePotentialEnergyFramework.PressureMinima(),pressure_anomaly[:,:,1],-5)
 
         @test length(centerstest) == 5
 
-        centers_and_labels,cyclones = detect_cyclones(pressure_anomaly[:,:,1],-5,2000)
+        centers_and_labels,cyclones = detect_cyclones(AvailablePotentialEnergyFramework.PressureMinima(),pressure_anomaly[:,:,1],-5,2000)
         
         @test length(centers_and_labels) == 6
         @test all([cyclones.segment_pixel_count[key] > 1 for key in keys(cyclones.segment_pixel_count)])
@@ -84,7 +84,7 @@ end
 
         @test_nowarn [averageallindistance(bin,addition_3d,(128,128),4000) for bin in bins]
 ### Try and add two frames, one with and one without TC
-        centers_labels_and_cyclones = [detect_cyclones(pressure_anomaly[:,:,i],-5,2000) for i in 1:2]
+        centers_labels_and_cyclones = [detect_cyclones(AvailablePotentialEnergyFramework.PressureMinima(),pressure_anomaly[:,:,i],-5,2000) for i in 1:2]
         @test 3 == begin
             totalcyclonecount = 0
             for timeindex in 1:2

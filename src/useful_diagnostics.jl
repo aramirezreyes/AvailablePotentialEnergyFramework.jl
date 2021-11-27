@@ -24,22 +24,24 @@ Computes the mean precipitation as a function of the binned precipitable water f
 It will be happy if bins is quite large (example from 0 to 300 mm).
 """
 function average_precipitation_per_pw_bin(pw,precipitation,pw_bins,binspacing)
-        probability_of_being_in_bin = zeros(length(pw_bins))
-        average_precipitation_per_bin = zeros(length(pw_bins))
-        number_of_columns = reduce(*,size(pw))
-        for column in CartesianIndices(pw)
-            binindex = ceil(Int,pw[column]/binspacing)
-            #@show binindex
-            average_precipitation_per_bin[binindex] += precipitation[column] 
-            probability_of_being_in_bin[binindex] += 1
-        end
-        #@show probability_of_being_in_bin
-        for (ind,prob) in enumerate(probability_of_being_in_bin)
-            prob == 0.0 && continue
-            average_precipitation_per_bin[ind] /= prob
-            probability_of_being_in_bin[ind] /= (number_of_columns * binspacing)
-        end
-        return probability_of_being_in_bin,average_precipitation_per_bin
+    T = eltype(pw)
+    tone = one(T)
+    tzero = zero(T)
+    probability_of_being_in_bin = zeros(T,length(pw_bins))
+    average_precipitation_per_bin = zeros(T,length(pw_bins))
+    number_of_columns = reduce(*,size(pw))
+    factor = number_of_columns * binspacing
+    @inbounds @simd for column in CartesianIndices(pw)
+        binindex = ceil(Int,pw[column]/binspacing)
+        average_precipitation_per_bin[binindex] += precipitation[column] 
+        probability_of_being_in_bin[binindex] += tone
+    end
+    @tturbo for ind in eachindex(probability_of_being_in_bin)
+        divideby = ifelse(probability_of_being_in_bin[ind] == tzero,tone,probability_of_being_in_bin[ind])
+        average_precipitation_per_bin[ind] /= divideby
+    end
+    @tturbo probability_of_being_in_bin ./= factor
+    return probability_of_being_in_bin,average_precipitation_per_bin
 end
 
 
