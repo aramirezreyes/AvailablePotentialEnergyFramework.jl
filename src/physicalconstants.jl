@@ -13,17 +13,18 @@ end
 Substance{T}(;cp = nothing, cv = nothing, R = nothing, Lv = nothing, Lf = nothing) where T = Substance{T}(cp,cv,R,Lv,Lf) 
 
 const Dryair = Substance{Quantity}(
-    cp = 1006.0u"J/kg/K", #J/kg/k at 1013 hPa
+    cp = 1005.7u"J/kg/K", #J/kg/k at 1013 hPa
     cv = 718.0u"J/kg/K",
     R  = 287.05u"J/kg/K" # J/kg/k
 )
 
 const Liquidwater = Substance{Quantity}(
-     Lv = 2.5e6u"J/kg", #J/kg
+     Lv = 2.501e6u"J/kg", #J/kg
      Lf = 3.33e5u"J/kg",
-     cp = 4200.0u"J/kg/K" #j/kg/k
+     cp = 4190.0u"J/kg/K" #j/kg/k
 )
 
 const Watervapor = Substance{Quantity}(
-    R = 461.52u"J/kg/K" #j/kg/K
+    R = 461.52u"J/kg/K", #j/kg/K
+    cp = 1870.0u"J/kg/K"
 )
