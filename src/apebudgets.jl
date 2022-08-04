@@ -536,6 +536,44 @@ end
 
 
 
+function getapebudget_2dshallow(h,u,v,fs,τ,dx,dy,dt)
+    ###
 
 
+
+    ##
+    lt, lz, ly, lx = size(h)
+    meanh = mean(h,dims=(1,2))
+    h′ = h .- meanh
+    h′sq = h′ .^ 2
+    ape = g*mean(h'sq, dims = (1,2)) ./ (2 .* meanh)
+    
+    
+    c .= sqrt.(g .* c) #this is the gravity wave speed, how much does it change with time? it may not be worth to have the vector
+    #we will diagnose convective heating as residual
+    dapedt =  g .* mean(h′ .^ 2, dims = (1,2)) / (2 .* meanh)
+
+    neighborx(indx,lx) = mod1(indx+1,lx)
+    onex = CartesianIndex((1,0,0,0))
+    oney = CartesianIndex((0,1,0,0))
+    onet = CartesianIndex((0,0,0,1))
+    buf = similar(h)    
+
+    @inbounds  for it in 1:lt, iz in 1:lz, iy in 1:ly, ix in 1:lx 
+        ind = CartesianIndex((ix,iy,iz,it))
+        indneigh = CartesianIndex((neighborx(ix,lx),iy,iz,it))
+        buf[ind] = (h[indneigh]*u[indneigh] - h[ind]*u[ind])/dx
+    end
+    ke = mean(buf, dims=(1,2))
+    @inbounds  for it in 1:lt, iz in 1:lz, iy in 1:ly, ix in 1:lx 
+        ind = CartesianIndex((ix,iy,iz,it))
+        indneigh = CartesianIndex((ix,neighborx(iy,ly),iz,it))
+        buf[ind] = (h[indneigh]*u[indneigh] - h[ind]*u[ind])/dx
+    end
+    ke = g .* h′ .* (ke .+ mean(buf, dims=(1,2))) ./ (2 .* hmean)
+
+    sink = g .* mean(h′.^2, dims = (1,2)) ./ (2τ .* meanh)
+
+    
+end
 
